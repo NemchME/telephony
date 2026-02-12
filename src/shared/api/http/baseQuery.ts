@@ -1,12 +1,11 @@
-// src/shared/api/http/baseQuery.ts
 import type { BaseQueryFn } from "@reduxjs/toolkit/query";
-import type { RootState } from "@/app/store/store";
 import { env } from "@/app/config/env";
 
 type RpcBody = {
   method: string;
   data?: unknown;
   filter?: unknown;
+
   token?: string;
   requestPurpose?: string;
 };
@@ -14,32 +13,30 @@ type RpcBody = {
 type RpcOk = any;
 type RpcErr = { error?: number; message?: string };
 
+type BaseQueryError = { status: string | number; data: RpcErr | any };
+
+function safeJsonParse(res: Response) {
+  return res.json().catch(() => null);
+}
+
 export const rpcBaseQuery =
-  (): BaseQueryFn<RpcBody, RpcOk, { status: string | number; data: RpcErr }> =>
-  async (body, api) => {
+  (): BaseQueryFn<RpcBody, RpcOk, BaseQueryError> =>
+  async (body) => {
     try {
-      const state = api.getState() as RootState;
-      const sessionID = state.session.sessionID;
-
-      const withToken: RpcBody =
+      const finalBody: RpcBody =
         body.method === "Authentificate"
-          ? body
-          : {
-              ...body,
-              token: body.token ?? sessionID ?? undefined,
-            };
+          ? { ...body, requestPurpose: body.requestPurpose ?? "clientView" }
+          : { ...body };
 
-      if (withToken.method === "Authentificate") {
-        withToken.requestPurpose = "clientView";
-      }
 
       const res = await fetch(env.API_URL, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(withToken),
+        body: JSON.stringify(finalBody),
       });
 
-      const json = await res.json().catch(() => null);
+      const json = await safeJsonParse(res);
 
       if (!res.ok) {
         return {
@@ -55,6 +52,11 @@ export const rpcBaseQuery =
 
       return { data: json };
     } catch (e: any) {
-      return { error: { status: "FETCH_ERROR", data: { message: e?.message ?? "Network error" } } };
+      return {
+        error: {
+          status: "FETCH_ERROR",
+          data: { message: e?.message ?? "Network error" },
+        },
+      };
     }
   };

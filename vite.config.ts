@@ -9,4 +9,19 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://m-dev3.vrn.ru",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/ws": {
+        target: "wss://m-dev3.vrn.ru",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });

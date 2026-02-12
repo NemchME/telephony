@@ -9,7 +9,7 @@ type SessionUser = {
 type SessionState = {
   sessionID: string | null;
   userName: string | null;
-  user: SessionUser | null;
+  user: unknown | null;
   vertoUrl: string | null;
 };
 
@@ -29,5 +29,6 @@ const slice = createSlice({
   },
 });
 
+export const sessionAcrions = slice.actions
 export const { setSession, clearSession } = slice.actions;
 export const sessionReducer = slice.reducer;

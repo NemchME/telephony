@@ -1,20 +1,31 @@
-export const RpcMethods = {
-  Authentificate: "Authentificate",
-  Terminate: "Terminate",
+import type { RpcRequest } from './rpcTypes';
 
-  UserSearch: "User.Search",
-  UserUpdate: "User.Update",
-  UserStateSearch: "UserState.Search",
+export const rpcMethods = {
+  authenticate: (login: string, password: string): RpcRequest => ({
+    method: 'Authentificate',
+    data: { login, password },
+  }),
 
-  CallGroupSearch: "CallGroup.Search",
-  CallGroupStateSearch: "CallGroupState.Search",
-  CallGroupAgentSearch: "CallGroupAgent.Search",
-  CallGroupAgentStateSearch: "CallGroupAgentState.Search",
+  terminate: (): RpcRequest => ({ method: 'Terminate' }),
 
-  BundleStateSearch: "BundleState.Search",
+  usersList: (filter: Record<string, unknown> = {}): RpcRequest => ({
+    method: 'User.Search',
+    filter,
+  }),
 
-  CdrSearch: "CDR.Search",
-  SpecialCdrSearch: "Special.CDR.Search",
+  userStatesList: (filter: Record<string, unknown> = {}): RpcRequest => ({
+    method: 'UserState.Search',
+    filter,
+  }),
+
+  userSetAvailStatus: (userId: string, availStatus: string): RpcRequest => ({
+    method: 'User.Update',
+    filter: { id: userId },
+    data: { availStatus },
+  }),
+
+  callGroupSearch: (filter: Record<string, unknown> = {}): RpcRequest => ({
+    method: 'CallGroup.Search',
+    filter,
+  }),
 } as const;
-
-export type RpcMethodName = (typeof RpcMethods)[keyof typeof RpcMethods];
