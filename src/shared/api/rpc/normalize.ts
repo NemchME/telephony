@@ -6,8 +6,8 @@ export function isRpcError(x: unknown): x is RpcErrorPayload {
     x !== null &&
     "error" in x &&
     "message" in x &&
-    typeof (x as any).error === "number" &&
-    typeof (x as any).message === "string"
+    typeof (x as RpcErrorPayload).error === "number" &&
+    typeof (x as RpcErrorPayload).message === "string"
   );
 }
 

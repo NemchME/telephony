@@ -1,33 +1,69 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-export type BundleState = {
-  items: unknown[];
-  lastUpdatedAt: number | null;
+export type BundleService = {
+  id: string;
+  type: string;
+  createdTime?: number;
+  hangupTime?: string | number;
+  answeredTime?: string | number;
+  ringingTime?: string | number;
+  connState?: string;
+  callState?: number;
+  cgpn?: string;
+  cgpnm?: string;
+  cdpn?: string;
+  cdpnm?: string;
+  'caller.commonName'?: string;
+  'caller.commonNumber'?: string;
+  'caller.userID'?: string;
+  'caller.userName'?: string;
+  'callee.commonName'?: string;
+  'callee.commonNumber'?: string;
+  'callee.userID'?: string;
+  'callee.userName'?: string;
+  [k: string]: unknown;
 };
 
-const initialState: BundleState = {
-  items: [],
-  lastUpdatedAt: null,
+export type Bundle = {
+  id: string;
+  domainID?: string;
+  services: BundleService[];
+};
+
+export type BundleSliceState = {
+  entities: Record<string, Bundle>;
+  ids: string[];
+};
+
+const initialState: BundleSliceState = {
+  entities: {},
+  ids: [],
 };
 
 export const bundleSlice = createSlice({
-  name: "bundle",
+  name: 'bundle',
   initialState,
   reducers: {
-    snapshot: (state, action: PayloadAction<unknown[]>) => {
-      state.items = action.payload;
-      state.lastUpdatedAt = Date.now();
+    setAll(state, action: PayloadAction<Bundle[]>) {
+      state.entities = {};
+      state.ids = [];
+      for (const b of action.payload) {
+        state.entities[b.id] = b;
+        state.ids.push(b.id);
+      }
     },
-    upsertMany: (state, action: PayloadAction<unknown[]>) => {
-      state.items = action.payload;
-      state.lastUpdatedAt = Date.now();
+    upsertBundle(state, action: PayloadAction<Bundle>) {
+      const b = action.payload;
+      if (!state.entities[b.id]) state.ids.push(b.id);
+      state.entities[b.id] = b;
     },
-    removeMany: (state, _action: PayloadAction<string[]>) => {
-      state.lastUpdatedAt = Date.now();
+    removeBundle(state, action: PayloadAction<string>) {
+      const id = action.payload;
+      delete state.entities[id];
+      state.ids = state.ids.filter((x) => x !== id);
     },
-    clear: (state) => {
-      state.items = [];
-      state.lastUpdatedAt = null;
+    clear() {
+      return initialState;
     },
   },
 });

@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export type CdrRecord = {
   id: string;
@@ -6,9 +6,21 @@ export type CdrRecord = {
   createdTime?: number;
   answeredTime?: number;
   hangupTime?: number;
-  direction?: "in" | "out" | "both";
+  ringingTime?: number;
+  type?: string;
+  connState?: string;
+  callState?: number;
   cdpn?: string;
   cgpn?: string;
+  cgpnm?: string;
+  cdpnm?: string;
+  'caller.commonName'?: string;
+  'caller.commonNumber'?: string;
+  'callee.commonName'?: string;
+  'callee.commonNumber'?: string;
+  hangupSide?: string;
+  cids?: string;
+  [k: string]: unknown;
 };
 
 export type CdrState = {
@@ -26,7 +38,7 @@ const initialState: CdrState = {
 };
 
 export const cdrSlice = createSlice({
-  name: "cdr",
+  name: 'cdr',
   initialState,
   reducers: {
     upsertMany(state, action: PayloadAction<CdrRecord[]>) {
@@ -34,6 +46,11 @@ export const cdrSlice = createSlice({
         if (!state.entities[r.id]) state.ids.push(r.id);
         state.entities[r.id] = r;
       }
+    },
+    upsertOne(state, action: PayloadAction<CdrRecord>) {
+      const r = action.payload;
+      if (!state.entities[r.id]) state.ids.unshift(r.id);
+      state.entities[r.id] = r;
     },
     setPageInfo(state, action: PayloadAction<{ total: number; offset: number }>) {
       state.total = action.payload.total;
@@ -46,5 +63,4 @@ export const cdrSlice = createSlice({
 });
 
 export const cdrActions = cdrSlice.actions;
-
 export const cdrReducer = cdrSlice.reducer;

@@ -1,12 +1,14 @@
-// src/entities/callGroup/api/callGroupApi.ts
 import { apiSlice } from '@/app/store/api/apiSlice';
 import { rpcMethods } from '@/shared/api/rpc/methods';
 
 export type CallGroupAgent = {
+  id: string;
   userID: string;
+  callGroupID: string;
   status?: number;
   timeout?: number;
   skill?: number;
+  domainID?: string;
 };
 
 export type CallGroup = {
@@ -16,18 +18,55 @@ export type CallGroup = {
   type?: string;
   numbers?: string[];
   agents?: CallGroupAgent[];
-  lastModifiedTime?: number;
+  domainID?: string;
 };
 
-export type CallGroupsResponse = { elements: CallGroup[] };
+export type CallGroupAgentState = {
+  id: string;
+  userID: string;
+  callGroupID: string;
+  status: string;
+  lastModifiedStatus?: number;
+  domainID?: string;
+};
+
+export type CallGroupState = {
+  id: string;
+  domainID?: string;
+  queue?: unknown[];
+};
+
+export type ListResponse<T> = { elements: T[] };
 
 export const callGroupApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
-    getCallGroups: build.query<CallGroupsResponse, void>({
-      query: () => rpcMethods.callGroupSearch({}), // пустой фильтр = все
-      providesTags: ['CallGroups'],
+    getCallGroups: build.query<ListResponse<CallGroup>, void>({
+      query: () => rpcMethods.callGroupSearch({}),
+      providesTags: ['CallGroup'],
+    }),
+
+    getCallGroupAgents: build.query<ListResponse<CallGroupAgent>, void>({
+      query: () => rpcMethods.callGroupAgentSearch({}),
+    }),
+
+    getCallGroupAgentStates: build.query<ListResponse<CallGroupAgentState>, void>({
+      query: () => rpcMethods.callGroupAgentStateSearch({}),
+    }),
+
+    getCallGroupStates: build.query<ListResponse<CallGroupState>, void>({
+      query: () => rpcMethods.callGroupStateSearch({}),
+    }),
+
+    resetAgentState: build.mutation<unknown, { callGroupID: string; userID: string }>({
+      query: ({ callGroupID, userID }) => rpcMethods.callGroupAgentStateReset(callGroupID, userID),
     }),
   }),
 });
 
-export const { useGetCallGroupsQuery } = callGroupApi;
+export const {
+  useGetCallGroupsQuery,
+  useGetCallGroupAgentsQuery,
+  useGetCallGroupAgentStatesQuery,
+  useGetCallGroupStatesQuery,
+  useResetAgentStateMutation,
+} = callGroupApi;

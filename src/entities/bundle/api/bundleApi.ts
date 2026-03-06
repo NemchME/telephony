@@ -1,26 +1,15 @@
-import { apiSlice } from "@/app/store/api/apiSlice";
+import { apiSlice } from '@/app/store/api/apiSlice';
+import { rpcMethods } from '@/shared/api/rpc/methods';
+import type { Bundle } from '@/entities/bundle/model/bundleSlice';
 
-type BundleService = {
-  id: string;
-  type: string;
-  createdTime?: number;
-  hangupTime?: string;
-  [k: string]: unknown;
-};
-
-type BundleState = {
-  id: string;
-  domainID: string;
-  services: BundleService[];
-};
+export type BundleStateResponse = { elements: Bundle[] };
 
 export const bundleApi = apiSlice.injectEndpoints({
-  endpoints: (builder) => ({
-    getBundleState: builder.query<{ elements?: BundleState[] } | BundleState[], void>({
-      query: () => ({ method: "BundleState.Search" }),
+  endpoints: (build) => ({
+    getBundleState: build.query<BundleStateResponse, void>({
+      query: () => rpcMethods.bundleStateSearch({}),
     }),
   }),
-  overrideExisting: false,
 });
 
 export const { useGetBundleStateQuery } = bundleApi;

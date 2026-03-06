@@ -1,33 +1,17 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import { RequireAuth } from "./RequireAuth";
-import { AppLayout } from "@/shared/ui/layout/AppLayout";
-import { DashboardPage } from "@/pages/DashboardPage";
-
-import { LoginPage } from "@/pages/LoginPage";
-import { CallGroupsPage } from "@/pages/CallGroupsPage";
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { LoginPage } from '@/pages/LoginPage/LoginPage';
+import { RequireAuth } from './RequireAuth';
+import { MainPage } from '@/pages/MainPage/MainPage';
 
 export const router = createBrowserRouter([
-  { path: "/login", element: <LoginPage /> },
+  { path: '/login', element: <LoginPage /> },
   {
-    path: "/dashboard",
+    path: '/',
     element: (
       <RequireAuth>
-        <AppLayout>
-          <DashboardPage />
-        </AppLayout>
+        <MainPage />
       </RequireAuth>
     ),
   },
-
-    {
-    path: '/call-groups',
-    element: (
-      <RequireAuth>
-        <AppLayout>
-          <CallGroupsPage/>
-        </AppLayout>
-      </RequireAuth>
-    ),
-  },
-  { path: '*', element: <Navigate to="/login" replace /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);

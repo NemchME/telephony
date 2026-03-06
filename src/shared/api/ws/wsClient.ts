@@ -1,3 +1,4 @@
+
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonValue[] | { [k: string]: JsonValue };
 
@@ -26,9 +27,9 @@ function toWsEvent(msg: WsRawMessage): WsEvent | null {
   if (!isRecord(msg)) return null;
   if (typeof msg.type !== 'string') return null;
 
-  if ('payload' in msg) return { type: msg.type, payload: (msg as any).payload };
-  if ('data' in msg) return { type: msg.type, payload: (msg as any).data };
-  if ('elements' in msg) return { type: msg.type, payload: (msg as any).elements };
+  if ('payload' in msg) return { type: msg.type, payload: msg.payload };
+  if ('data' in msg) return { type: msg.type, payload: msg.data };
+  if ('elements' in msg) return { type: msg.type, payload: msg.elements };
 
   const { type, ...rest } = msg;
   return { type, payload: rest };
@@ -36,16 +37,34 @@ function toWsEvent(msg: WsRawMessage): WsEvent | null {
 
 export type WsHandler = (event: WsEvent, raw: WsRawMessage) => void;
 
+const RECONNECT_MIN_DELAY = 1000;
+const RECONNECT_MAX_DELAY = 30000;
+
 export class WsClient {
   private ws: WebSocket | null = null;
   private handlers = new Set<WsHandler>();
+  private url: string | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectDelay = RECONNECT_MIN_DELAY;
+  private intentionalClose = false;
 
   connect(url: string): void {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
 
-    this.ws = new WebSocket(url);
+    this.url = url;
+    this.intentionalClose = false;
+    this.doConnect();
+  }
+
+  private doConnect(): void {
+    if (!this.url) return;
+    this.ws = new WebSocket(this.url);
+
+    this.ws.onopen = () => {
+      this.reconnectDelay = RECONNECT_MIN_DELAY;
+    };
 
     this.ws.onmessage = (e: MessageEvent<string>) => {
       const parsed = safeParseJson(e.data);
@@ -59,10 +78,32 @@ export class WsClient {
 
     this.ws.onclose = () => {
       this.ws = null;
+      if (!this.intentionalClose && this.url) {
+        this.scheduleReconnect();
+      }
+    };
+
+    this.ws.onerror = () => {
     };
   }
 
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_DELAY);
+      this.doConnect();
+    }, this.reconnectDelay);
+  }
+
   disconnect(): void {
+    this.intentionalClose = true;
+    this.url = null;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (!this.ws) return;
     this.ws.close();
     this.ws = null;

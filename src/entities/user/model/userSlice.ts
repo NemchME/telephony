@@ -1,28 +1,40 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export type User = {
   id: string;
-  name: string;
+  name?: string;
   commonName?: string;
-  adminStatus?: 0 | 1;
-  availStatus?: "avail" | "direct" | "dnd" | "away" | string;
+  adminStatus?: number;
+  availStatus?: string;
+  busyStatus?: string;
   numbers?: string[];
-  authorized?: 0 | 1;
+  authorized?: number;
   domainID?: string;
+  maxCalls?: number;
 };
 
-export type UserState = {
+export type UserStateRecord = {
+  id: string;
+  userID?: string;
+  networkStatus?: number;
+  busyCount?: number;
+  lastModified?: number;
+};
+
+export type UserSliceState = {
   entities: Record<string, User>;
   ids: string[];
+  states: Record<string, UserStateRecord>;
 };
 
-const initialState: UserState = {
+const initialState: UserSliceState = {
   entities: {},
   ids: [],
+  states: {},
 };
 
 export const userSlice = createSlice({
-  name: "user",
+  name: 'user',
   initialState,
   reducers: {
     upsertMany(state, action: PayloadAction<User[]>) {
@@ -30,6 +42,23 @@ export const userSlice = createSlice({
         if (!state.entities[u.id]) state.ids.push(u.id);
         state.entities[u.id] = u;
       }
+    },
+    upsertOne(state, action: PayloadAction<User>) {
+      const u = action.payload;
+      if (!state.entities[u.id]) state.ids.push(u.id);
+      state.entities[u.id] = u;
+    },
+    setUserStates(state, action: PayloadAction<UserStateRecord[]>) {
+      state.states = {};
+      for (const s of action.payload) {
+        const key = s.userID ?? s.id;
+        state.states[key] = s;
+      }
+    },
+    upsertUserState(state, action: PayloadAction<UserStateRecord>) {
+      const s = action.payload;
+      const key = s.userID ?? s.id;
+      state.states[key] = s;
     },
     reset() {
       return initialState;

@@ -7,8 +7,8 @@ import { callGroupReducer } from '@/entities/callGroup/model/callGroupSlice';
 import { bundleReducer } from '@/entities/bundle/model/bundleSlice';
 import { cdrReducer } from '@/entities/cdr/model/cdrSlice';
 
-import { filtersReducer } from '@/features/filters/model/filtersSlice';
 import { groupOrderReducer } from '@/features/realtime/model/groupOrderSlice';
+import { viewSettingsReducer } from '@/features/realtime/model/viewSettingsSlice';
 
 export const rootReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
@@ -19,8 +19,8 @@ export const rootReducer = combineReducers({
   bundle: bundleReducer,
   cdr: cdrReducer,
 
-  filters: filtersReducer,
   groupOrder: groupOrderReducer,
+  viewSettings: viewSettingsReducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
