@@ -23,6 +23,12 @@ server: {
       changeOrigin: true,
       secure: false,
     },
+    "/verto": {
+      target: "wss://m-dev3.vrn.ru:8082",
+      ws: true,
+      changeOrigin: true,
+      secure: false,
+    },
   },
 },
 });

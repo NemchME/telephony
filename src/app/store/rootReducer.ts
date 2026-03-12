@@ -9,6 +9,7 @@ import { cdrReducer } from '@/entities/cdr/model/cdrSlice';
 
 import { groupOrderReducer } from '@/features/realtime/model/groupOrderSlice';
 import { viewSettingsReducer } from '@/features/realtime/model/viewSettingsSlice';
+import { vertoReducer } from '@/entities/call/model/vertoSlice';
 
 export const rootReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
@@ -18,6 +19,7 @@ export const rootReducer = combineReducers({
   callGroup: callGroupReducer,
   bundle: bundleReducer,
   cdr: cdrReducer,
+  verto: vertoReducer,
 
   groupOrder: groupOrderReducer,
   viewSettings: viewSettingsReducer,

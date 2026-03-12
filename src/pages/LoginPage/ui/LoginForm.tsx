@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useLoginMutation } from '@/entities/session/api/authApi';
+import { saveVertoCredentials } from '@/entities/call/model/vertoMiddleware';
 import { useNavigate } from 'react-router-dom';
 
 function extractErrorMessage(error: unknown): string | null {
@@ -25,10 +26,11 @@ export function LoginForm() {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
+      saveVertoCredentials(loginValue, password);
       await login({ login: loginValue, password }).unwrap();
       navigate('/', { replace: true });
-    } catch (e) {
-      //
+    } catch {
+
     }
   };
 

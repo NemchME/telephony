@@ -1,31 +1,50 @@
-import { useState, type KeyboardEvent } from 'react';
-import { useAppSelector } from '@/app/store/hooks';
+import { useState, useCallback, type KeyboardEvent } from 'react';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import {
   selectUserCommonName,
   selectUserName,
   selectUserNumbers,
+  selectWsStatus,
 } from '@/entities/session/model/sessionSelectors';
 import { useTerminateMutation } from '@/entities/session/api/authApi';
-import { useMakeCallMutation } from '@/entities/call/api/callApi';
+import { vertoActions } from '@/entities/call/model/vertoSlice';
+import { answerInboundCall, rejectInboundCall } from '@/entities/call/model/vertoMiddleware';
+import { vertoClient } from '@/shared/api/verto/vertoClient';
+import { createOutboundSession, destroySession } from '@/shared/api/verto/webrtcManager';
 import { StatusDropdown } from '@/pages/MainPage/ui/StatusDropdown';
 import { SettingsModal } from '@/pages/MainPage/ui/SettingsModal';
 import { UserGroupsModal } from '@/pages/MainPage/ui/UserGroupsModal';
 import { useNavigate } from 'react-router-dom';
 
 export function Header() {
+  const dispatch = useAppDispatch();
   const commonName = useAppSelector(selectUserCommonName);
   const userName = useAppSelector(selectUserName);
   const userNumbers = useAppSelector(selectUserNumbers);
+  const wsStatus = useAppSelector(selectWsStatus);
+  const vertoState = useAppSelector((s) => s.verto.connectionState);
+  const vertoCalls = useAppSelector((s) => s.verto.callIds);
+  const vertoCallMap = useAppSelector((s) => s.verto.calls);
   const [terminate] = useTerminateMutation();
-  const [makeCall, { isLoading: isCallLoading }] = useMakeCallMutation();
   const navigate = useNavigate();
   const [phoneInput, setPhoneInput] = useState('');
   const [callError, setCallError] = useState<string | null>(null);
+  const [isCalling, setIsCalling] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [userGroupsOpen, setUserGroupsOpen] = useState(false);
 
   const displayName = commonName ?? userName ?? '';
   const mainNumber = userNumbers[0] ?? '';
+
+  // Find incoming ringing call (any position in the list)
+  const incomingCall = vertoCalls
+    .map((id) => vertoCallMap[id])
+    .find((c) => c && c.direction === 'inbound' && c.state === 'ringing') ?? null;
+
+  // Active Verto call (first non-ringing-inbound one, or first one)
+  const activeCallID = vertoCalls[0] ?? null;
+  const activeCall = activeCallID ? vertoCallMap[activeCallID] : null;
+  const hasActiveCall = activeCall != null && activeCall.state !== 'hangup' && activeCall.state !== 'destroy';
 
   const handleLogout = async () => {
     try {
@@ -35,19 +54,85 @@ export function Header() {
     }
   };
 
-  const handleMakeCall = async () => {
+  const handleMakeCall = useCallback(async () => {
     const cdpn = phoneInput.trim();
-    if (!cdpn || !mainNumber) return;
+    if (!cdpn) return;
     setCallError(null);
+
+    if (vertoState !== 'connected') {
+      setCallError('Verto не подключён');
+      setTimeout(() => setCallError(null), 3000);
+      return;
+    }
+
+    setIsCalling(true);
     try {
-      await makeCall({ cgpn: mainNumber, cdpn }).unwrap();
+      // Create WebRTC session and get SDP offer
+      const tempCallID = crypto.randomUUID();
+      const { offerSdp } = await createOutboundSession(tempCallID);
+
+      // Add call to Redux immediately
+      dispatch(vertoActions.addCall({
+        callID: tempCallID,
+        direction: 'outbound',
+        destinationNumber: cdpn,
+        callerIdName: displayName,
+        callerIdNumber: mainNumber,
+        state: 'trying',
+        startedAt: Date.now(),
+      }));
+
+      // Send invite via Verto
+      const result = await vertoClient.invite(tempCallID, cdpn, displayName, mainNumber, offerSdp);
+
+      // If server assigned a different callID, update
+      if (result.callID && result.callID !== tempCallID) {
+        // Remove temp, add with real ID
+        dispatch(vertoActions.removeCall(tempCallID));
+        dispatch(vertoActions.addCall({
+          callID: result.callID,
+          direction: 'outbound',
+          destinationNumber: cdpn,
+          callerIdName: displayName,
+          callerIdNumber: mainNumber,
+          state: 'ringing',
+          startedAt: Date.now(),
+        }));
+      } else {
+        dispatch(vertoActions.updateCallState({ callID: tempCallID, state: 'ringing' }));
+      }
+
       setPhoneInput('');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ошибка вызова';
       setCallError(msg);
-      setTimeout(() => setCallError(null), 3000);
+      setTimeout(() => setCallError(null), 5000);
+    } finally {
+      setIsCalling(false);
     }
-  };
+  }, [phoneInput, vertoState, displayName, mainNumber, dispatch]);
+
+  const handleHangup = useCallback(async () => {
+    if (!activeCallID) return;
+    try {
+      await vertoClient.bye(activeCallID);
+    } catch { /* ignore */ }
+    destroySession(activeCallID);
+    dispatch(vertoActions.updateCallState({ callID: activeCallID, state: 'hangup' }));
+    setTimeout(() => {
+      dispatch(vertoActions.removeCall(activeCallID));
+    }, 1000);
+  }, [activeCallID, dispatch]);
+
+  const handleAcceptCall = useCallback(async () => {
+    if (!incomingCall?.remoteSdp) return;
+    await answerInboundCall(incomingCall.callID, incomingCall.remoteSdp, dispatch);
+  }, [incomingCall, dispatch]);
+
+  const handleRejectCall = useCallback(async () => {
+    if (!incomingCall) return;
+    await rejectInboundCall(incomingCall.callID, dispatch);
+  }, [incomingCall, dispatch]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -56,15 +141,35 @@ export function Header() {
     }
   };
 
+  const vertoStatusIcon = vertoState === 'connected' ? '🟢'
+    : vertoState === 'connecting' ? '🟡'
+    : vertoState === 'error' ? '🔴'
+    : '⚪';
+
   return (
     <>
       <div className="header">
+        <span
+          className={`header__ws-dot ws-dot--${wsStatus}`}
+          title={
+            wsStatus === 'connected' ? 'WebSocket подключён' :
+            wsStatus === 'connecting' ? 'Подключение...' :
+            wsStatus === 'reconnecting' ? 'Переподключение...' :
+            'Отключён'
+          }
+        />
         <span className="header__title">Call-Центр</span>
         <span className="header__user-info">
           {displayName} {mainNumber}
         </span>
         <StatusDropdown />
         <div className="header__spacer" />
+
+        {/* Verto status indicator */}
+        <span className="header__verto-status" title={`Verto: ${vertoState}`}>
+          {vertoStatusIcon}
+        </span>
+
         <input
           className="header__phone-input"
           type="text"
@@ -72,16 +177,58 @@ export function Header() {
           onChange={(e) => setPhoneInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Номер..."
+          disabled={hasActiveCall}
         />
-        <button
-          className="header__call-btn"
-          onClick={handleMakeCall}
-          disabled={isCallLoading || !phoneInput.trim()}
-          title={callError ?? undefined}
-        >
-          {isCallLoading ? '...' : '📞 Звонок'}
-        </button>
+
+        {hasActiveCall ? (
+          <button
+            className="header__hangup-btn"
+            onClick={handleHangup}
+            title="Завершить звонок"
+          >
+            📕 Завершить
+          </button>
+        ) : (
+          <button
+            className="header__call-btn"
+            onClick={handleMakeCall}
+            disabled={isCalling || !phoneInput.trim() || vertoState !== 'connected'}
+            title={callError ?? (vertoState !== 'connected' ? 'Verto не подключён' : undefined)}
+          >
+            {isCalling ? '...' : '📞 Звонок'}
+          </button>
+        )}
+
         {callError && <span className="header__call-error">{callError}</span>}
+
+        {/* Incoming call — accept / reject */}
+        {incomingCall && (
+          <span className="header__incoming">
+            <span className="header__incoming-text">
+              Входящий: {incomingCall.callerIdName || incomingCall.callerIdNumber || incomingCall.destinationNumber}
+              {incomingCall.callerIdNumber && incomingCall.callerIdName ? ` (${incomingCall.callerIdNumber})` : ''}
+            </span>
+            <button className="header__accept-btn" onClick={handleAcceptCall}>
+              Принять
+            </button>
+            <button className="header__reject-btn" onClick={handleRejectCall}>
+              Отклонить
+            </button>
+          </span>
+        )}
+
+        {/* Show active call info (non-incoming) */}
+        {activeCall && !incomingCall && (
+          <span className="header__call-info">
+            {activeCall.state === 'trying' && '⏳ Набор...'}
+            {activeCall.state === 'ringing' && activeCall.direction === 'outbound' && '🔔 Вызов...'}
+            {activeCall.state === 'early' && '🔔 Вызов...'}
+            {activeCall.state === 'active' && `🗣 ${activeCall.destinationNumber}`}
+            {activeCall.state === 'held' && `⏸ Удержание`}
+            {activeCall.state === 'hangup' && '📕 Завершён'}
+          </span>
+        )}
+
         <div className="header__spacer" />
         <a
           className="header__icon-btn"

@@ -218,6 +218,21 @@ a:hover {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   z-index: 100;
 }
+.header__ws-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.ws-dot--connected { background: var(--color-online); }
+.ws-dot--connecting { background: #f39c12; animation: ws-pulse 1s infinite; }
+.ws-dot--reconnecting { background: #e74c3c; animation: ws-pulse 1s infinite; }
+.ws-dot--disconnected { background: var(--color-offline); }
+@keyframes ws-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
 .header__title {
   font-size: 15px;
   font-weight: 700;
@@ -271,11 +286,85 @@ a:hover {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.header__hangup-btn {
+  padding: 5px 16px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.header__hangup-btn:hover {
+  background: #c0392b;
+}
+.header__call-info {
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  padding: 0 6px;
+  animation: fade-in 0.2s;
+}
+.header__verto-status {
+  font-size: 10px;
+  margin-right: 4px;
+  cursor: default;
+}
 .header__call-error {
   font-size: 11px;
   color: #ff6b6b;
   white-space: nowrap;
   animation: fade-in 0.2s;
+}
+.header__incoming {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  animation: incoming-pulse 1.5s infinite;
+}
+.header__incoming-text {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.header__accept-btn {
+  padding: 4px 14px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.header__accept-btn:hover {
+  background: #1e8449;
+}
+.header__reject-btn {
+  padding: 4px 14px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.header__reject-btn:hover {
+  background: #c0392b;
+}
+@keyframes incoming-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 @keyframes fade-in {
   from { opacity: 0; }

@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { rootReducer } from './rootReducer';
 import { apiSlice } from './api/apiSlice';
 import { wsMiddleware } from './wsMiddleware';
+import { vertoMiddleware } from '@/entities/call/model/vertoMiddleware';
 import { listenerMiddleware } from './listenerMiddleware';
 
 export const store = configureStore({
@@ -10,7 +11,8 @@ export const store = configureStore({
     getDefault()
       .prepend(listenerMiddleware.middleware)
       .concat(apiSlice.middleware)
-      .concat(wsMiddleware),
+      .concat(wsMiddleware)
+      .concat(vertoMiddleware),
 });
 
 export type AppStore = typeof store;

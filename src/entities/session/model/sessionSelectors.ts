@@ -9,3 +9,4 @@ export const selectUserNumbers = (s: RootState) => s.session.userNumbers;
 export const selectAvailStatus = (s: RootState) => s.session.availStatus;
 export const selectVertoUrl = (s: RootState) => s.session.vertoUrl;
 export const selectIsAuthed = (s: RootState) => Boolean(s.session.sessionID);
+export const selectWsStatus = (s: RootState) => s.session.wsStatus;

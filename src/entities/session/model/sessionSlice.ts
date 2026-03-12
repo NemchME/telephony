@@ -10,6 +10,8 @@ export type SessionUser = {
   dod?: string;
 };
 
+export type WsConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+
 export type SessionState = {
   sessionID: string | null;
   userName: string | null;
@@ -19,6 +21,7 @@ export type SessionState = {
   availStatus: string | null;
   vertoUrl: string | null;
   user: SessionUser | null;
+  wsStatus: WsConnectionStatus;
 };
 
 const initialState: SessionState = {
@@ -30,6 +33,7 @@ const initialState: SessionState = {
   availStatus: null,
   vertoUrl: null,
   user: null,
+  wsStatus: 'disconnected',
 };
 
 export const sessionSlice = createSlice({
@@ -59,10 +63,14 @@ export const sessionSlice = createSlice({
         availStatus: p.availStatus ?? null,
         vertoUrl: p.vertoUrl ?? null,
         user: p.user ?? null,
+        wsStatus: 'disconnected' as const,
       };
     },
     setAvailStatus(state, action: PayloadAction<string>) {
       state.availStatus = action.payload;
+    },
+    setWsStatus(state, action: PayloadAction<WsConnectionStatus>) {
+      state.wsStatus = action.payload;
     },
     clearSession() {
       return initialState;
@@ -71,5 +79,5 @@ export const sessionSlice = createSlice({
 });
 
 export const sessionActions = sessionSlice.actions;
-export const { setSession, clearSession, setAvailStatus } = sessionSlice.actions;
+export const { setSession, clearSession, setAvailStatus, setWsStatus } = sessionSlice.actions;
 export const sessionReducer = sessionSlice.reducer;
