@@ -25,28 +25,39 @@ function toWsEvent(msg: WsRawMessage): WsEvent | null {
   if (typeof msg === 'string') return { type: msg };
 
   if (!isRecord(msg)) return null;
-  if (typeof msg.type !== 'string') return null;
 
-  if ('payload' in msg) return { type: msg.type, payload: msg.payload };
-  if ('data' in msg) return { type: msg.type, payload: msg.data };
-  if ('elements' in msg) return { type: msg.type, payload: msg.elements };
+  const type = typeof msg.type === 'string' ? msg.type
+    : typeof msg.method === 'string' ? msg.method
+    : null;
+  if (!type) return null;
 
-  const { type, ...rest } = msg;
+  if ('payload' in msg) return { type, payload: msg.payload };
+  if ('data' in msg) return { type, payload: msg.data };
+  if ('elements' in msg) return { type, payload: msg.elements };
+
+  const { type: _t, method: _m, eventTimeSec: _ts, ...rest } = msg;
   return { type, payload: rest };
 }
 
 export type WsHandler = (event: WsEvent, raw: WsRawMessage) => void;
 
+export type WsConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
+export type WsStateListener = (state: WsConnectionState) => void;
+
 const RECONNECT_MIN_DELAY = 1000;
 const RECONNECT_MAX_DELAY = 30000;
+const HEARTBEAT_INTERVAL = 30000;
 
 export class WsClient {
   private ws: WebSocket | null = null;
   private handlers = new Set<WsHandler>();
+  private stateListeners = new Set<WsStateListener>();
   private url: string | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectDelay = RECONNECT_MIN_DELAY;
   private intentionalClose = false;
+  private _state: WsConnectionState = 'disconnected';
 
   connect(url: string): void {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
@@ -55,6 +66,7 @@ export class WsClient {
 
     this.url = url;
     this.intentionalClose = false;
+    this.setState('connecting');
     this.doConnect();
   }
 
@@ -64,6 +76,8 @@ export class WsClient {
 
     this.ws.onopen = () => {
       this.reconnectDelay = RECONNECT_MIN_DELAY;
+      this.setState('connected');
+      this.startHeartbeat();
     };
 
     this.ws.onmessage = (e: MessageEvent<string>) => {
@@ -78,8 +92,12 @@ export class WsClient {
 
     this.ws.onclose = () => {
       this.ws = null;
+      this.stopHeartbeat();
       if (!this.intentionalClose && this.url) {
+        this.setState('reconnecting');
         this.scheduleReconnect();
+      } else {
+        this.setState('disconnected');
       }
     };
 
@@ -97,21 +115,61 @@ export class WsClient {
     }, this.reconnectDelay);
   }
 
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send(JSON.stringify({ method: 'Heartbeat' }));
+        } catch {
+          // ошибка
+        }
+      }
+    }, HEARTBEAT_INTERVAL);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  private setState(newState: WsConnectionState): void {
+    if (this._state === newState) return;
+    this._state = newState;
+    this.stateListeners.forEach((l) => l(newState));
+  }
+
   disconnect(): void {
     this.intentionalClose = true;
     this.url = null;
+    this.stopHeartbeat();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    if (!this.ws) return;
+    if (!this.ws) {
+      this.setState('disconnected');
+      return;
+    }
     this.ws.close();
     this.ws = null;
+    this.setState('disconnected');
   }
 
   subscribe(handler: WsHandler): () => void {
     this.handlers.add(handler);
     return () => this.handlers.delete(handler);
+  }
+
+  onStateChange(listener: WsStateListener): () => void {
+    this.stateListeners.add(listener);
+    return () => this.stateListeners.delete(listener);
+  }
+
+  get connectionState(): WsConnectionState {
+    return this._state;
   }
 
   get isConnected(): boolean {
