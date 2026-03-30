@@ -11,6 +11,8 @@ import {
 } from '@/shared/api/verto/webrtcManager';
 import type { VertoCall } from '@/shared/api/verto/vertoClient';
 import type { RootState } from '@/app/store/rootReducer';
+import { bundleActions, type BundleService } from '@/entities/bundle/model/bundleSlice';
+import { callApi } from '@/entities/call/api/callApi';
 import { env } from '@/app/config/env';
 
 let ringtoneCtx: AudioContext | null = null;
@@ -21,7 +23,7 @@ function startRingtone() {
   try {
     ringtoneCtx = new AudioContext();
     function playRingBurst() {
-      if (!ringtoneCtx) return;
+      if (!ringtoneCtx) return; 
       const now = ringtoneCtx.currentTime;
       const osc1 = ringtoneCtx.createOscillator();
       const osc2 = ringtoneCtx.createOscillator();
@@ -42,7 +44,7 @@ function startRingtone() {
   } catch { /* ignore */ }
 }
 
-function stopRingtone() {
+export function stopRingtone() {
   if (ringtoneInterval) {
     clearInterval(ringtoneInterval);
     ringtoneInterval = null;
@@ -75,6 +77,21 @@ type StoreApi = {
   dispatch: (a: unknown) => unknown;
   getState: () => RootState;
 };
+
+function hangupAllBundles(store: StoreApi) {
+  const state = store.getState();
+  const { ids, entities } = state.bundle;
+  for (const bid of ids) {
+    const b = entities[bid];
+    if (b) {
+      const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
+      for (const svc of callServices) {
+        store.dispatch(callApi.endpoints.hangupCall.initiate({ callId: svc.id }) as unknown as ReturnType<typeof bundleActions.removeBundle>);
+      }
+    }
+    store.dispatch(bundleActions.removeBundle(bid));
+  }
+}
 
 export const vertoMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
@@ -149,6 +166,7 @@ async function connectVerto(
         stopRingtone();
         playEndSound();
         destroySession(callID);
+        hangupAllBundles(store);
         setTimeout(() => {
           store.dispatch(vertoActions.removeCall(callID));
         }, 2000);
@@ -158,7 +176,7 @@ async function connectVerto(
     onCallMedia: (callID: string, sdp: string) => {
       setRemoteAnswer(callID, sdp)
         .then(() => {
-          const call = s.getState().verto.calls[callID];
+          const call = store.getState().verto.calls[callID];
           if (call && call.state !== 'active') {
             store.dispatch(vertoActions.updateCallState({ callID, state: 'early' }));
           }
@@ -219,6 +237,7 @@ export async function answerInboundCall(
 export async function rejectInboundCall(
   callID: string,
   dispatch: (a: unknown) => unknown,
+  getState?: () => RootState,
 ) {
   try {
     await vertoClient.bye(callID);
@@ -226,6 +245,21 @@ export async function rejectInboundCall(
   destroySession(callID);
   dispatch(vertoActions.updateCallState({ callID, state: 'hangup' }));
   stopRingtone();
+
+  if (getState) {
+    const { ids, entities } = getState().bundle;
+    for (const bid of ids) {
+      const b = entities[bid];
+      if (b) {
+        const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
+        for (const svc of callServices) {
+          dispatch(callApi.endpoints.hangupCall.initiate({ callId: svc.id }) as unknown as ReturnType<typeof bundleActions.removeBundle>);
+        }
+      }
+      dispatch(bundleActions.removeBundle(bid));
+    }
+  }
+
   setTimeout(() => {
     dispatch(vertoActions.removeCall(callID));
   }, 1000);

@@ -18,7 +18,7 @@ function setRowsPerPageLS(n: number) {
 function toMs(v: unknown): number {
   if (!v) return 0;
   const n = Number(v);
-  if (n > 1e15) return n / 1000;
+  if (n > 1e15) return Math.floor(n / 1000);
   if (n > 1e12) return n;
   return n * 1000;
 }
@@ -53,7 +53,6 @@ export function CallHistoryPanel() {
         <thead>
           <tr>
             <th>Время вызова</th>
-            <th>Время начала разговора</th>
             <th>Номер</th>
             <th>Имя</th>
             <th>Тип звонка</th>
@@ -62,9 +61,9 @@ export function CallHistoryPanel() {
         </thead>
         <tbody>
           {isFetching && records.length === 0 ? (
-            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Загрузка...</td></tr>
+            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Загрузка...</td></tr>
           ) : records.length === 0 ? (
-            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Нет записей</td></tr>
+            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Нет записей</td></tr>
           ) : (
             records.map((r: CdrRow, i: number) => {
               const createdMs = toMs(r.createdTime);
@@ -83,7 +82,6 @@ export function CallHistoryPanel() {
               return (
                 <tr key={r.id ?? i}>
                   <td>{createdMs ? formatDateTime(createdMs) : ''}</td>
-                  <td>{answeredMs ? formatDateTime(answeredMs) : ''}</td>
                   <td>{number}</td>
                   <td>{name}</td>
                   <td>{callType}</td>

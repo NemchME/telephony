@@ -165,36 +165,6 @@ export const selectRoster = createSelector(
       }
     }
 
-    const standaloneUsers = userIds.filter((id) => !usersInGroups.has(id));
-    if (standaloneUsers.length > 0) {
-      for (const uid of standaloneUsers) {
-        const user = userEntities[uid];
-        if (!user) continue;
-        const uState = userStates[uid];
-        const presence = calcPresence({
-          networkStatus: uState?.networkStatus,
-          busyCount: uState?.busyCount,
-          availStatus: user.availStatus,
-        });
-
-        rows.push({
-          kind: 'agent',
-          userId: uid,
-          groupId: '__standalone__',
-          displayName: user.commonName ?? user.name ?? uid,
-          username: user.name ?? uid,
-          numbers: user.numbers ?? [],
-          availStatus: user.availStatus ?? 'avail',
-          availStatusLabel: AVAIL_LABELS[user.availStatus ?? ''] ?? user.availStatus ?? '',
-          networkStatus: uState?.networkStatus ?? -1,
-          busyCount: uState?.busyCount ?? 0,
-          agentStatus: '__undef__',
-          lastModifiedStatus: undefined,
-          presence,
-          agentEnabled: false,
-        });
-      }
-    }
 
     return rows;
   },

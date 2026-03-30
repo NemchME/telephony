@@ -1,4 +1,5 @@
 
+
 const DEFAULT_STUN = 'stun:stun.l.google.com:19302';
 
 function getStunEnabled(): boolean {
@@ -126,7 +127,21 @@ export async function createInboundSession(callID: string, remoteSdp: string): P
 export async function setRemoteAnswer(callID: string, remoteSdp: string): Promise<void> {
   const session = activeSessions.get(callID);
   if (!session) throw new Error(`No session for callID ${callID}`);
-  await session.pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: remoteSdp }));
+
+  const signalingState = session.pc.signalingState;
+
+  if (signalingState === 'have-local-offer') {
+    await session.pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: remoteSdp }));
+  } else if (signalingState === 'stable') {
+    await session.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: remoteSdp }));
+    const answer = await session.pc.createAnswer();
+    await session.pc.setLocalDescription(answer);
+  } else {
+    if (import.meta.env.DEV) {
+      console.warn(`[WebRTC] setRemoteAnswer skipped, signalingState=${signalingState}`);
+    }
+    return;
+  }
 
   if (!session.remoteAudio.srcObject) {
     session.remoteAudio.srcObject = session.remoteStream;
@@ -157,6 +172,24 @@ export function getSession(callID: string): WebRtcCallSession | undefined {
 
 export function getActiveCallIDs(): string[] {
   return Array.from(activeSessions.keys());
+}
+
+export function toggleMute(callID: string): boolean {
+  const session = activeSessions.get(callID);
+  if (!session) return false;
+  const audioTracks = session.localStream.getAudioTracks();
+  const muted = audioTracks.length > 0 && audioTracks[0].enabled;
+  for (const track of audioTracks) {
+    track.enabled = !muted;
+  }
+  return muted; 
+}
+
+export function isMuted(callID: string): boolean {
+  const session = activeSessions.get(callID);
+  if (!session) return false;
+  const audioTracks = session.localStream.getAudioTracks();
+  return audioTracks.length > 0 && !audioTracks[0].enabled;
 }
 
 export function destroyAllSessions() {

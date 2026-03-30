@@ -7,7 +7,7 @@ import {
   type CallGroupAgent,
   type CallGroupAgentState,
 } from '@/entities/callGroup/model/callGroupSlice';
-import { bundleActions, type Bundle } from '@/entities/bundle/model/bundleSlice';
+import { bundleActions, type Bundle, type BundleService } from '@/entities/bundle/model/bundleSlice';
 import { cdrActions, type CdrRecord } from '@/entities/cdr/model/cdrSlice';
 import { setAvailStatus } from '@/entities/session/model/sessionSlice';
 import type { RootState } from '@/app/store/rootReducer';
@@ -16,6 +16,25 @@ export type WsRouteCtx = {
   dispatch: (action: UnknownAction) => UnknownAction;
   getState: () => RootState;
 };
+
+const TERMINATED_CONN_STATES = new Set([
+  'hangup', 'destroy', 'completed', 'failed', 'canceled',
+  'terminated', 'disconnected', 'released', 'bye',
+]);
+
+function isServiceTerminated(s: BundleService): boolean {
+  if (s.connState && TERMINATED_CONN_STATES.has(s.connState)) return true;
+  if (s.hangupTime) return true;
+  if (typeof s.callState === 'number' && s.callState === 0 && s.connState !== 'ringing') return true;
+  return false;
+}
+
+function isBundleTerminated(b: Bundle): boolean {
+  if (!b.services || b.services.length === 0) return false;
+  const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
+  if (callServices.length === 0) return false;
+  return callServices.every(isServiceTerminated);
+}
 
 function extractItems<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -27,10 +46,6 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
   if (!event?.type) return;
   const data = event.payload;
   if (!data || typeof data !== 'object') return;
-
-  if (import.meta.env.DEV) {
-    console.log('[WS]', event.type, data);
-  }
 
   switch (event.type) {
     case 'VirtaEvent.User.Updated': {
@@ -71,7 +86,13 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
 
     case 'VirtaEvent.BundleState.Updated': {
       const items = extractItems<Bundle>(data);
-      for (const b of items) ctx.dispatch(bundleActions.upsertBundle(b));
+      for (const b of items) {
+        if (isBundleTerminated(b)) {
+          ctx.dispatch(bundleActions.removeBundle(b.id));
+        } else {
+          ctx.dispatch(bundleActions.upsertBundle(b));
+        }
+      }
       break;
     }
 

@@ -286,6 +286,28 @@ a:hover {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.header__mute-btn {
+  padding: 5px 10px;
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s;
+  margin-right: 4px;
+}
+.header__mute-btn:hover {
+  background: #777;
+}
+.header__mute-btn--active {
+  background: #e67e22;
+}
+.header__mute-btn--active:hover {
+  background: #d35400;
+}
 .header__hangup-btn {
   padding: 5px 16px;
   background: #e74c3c;

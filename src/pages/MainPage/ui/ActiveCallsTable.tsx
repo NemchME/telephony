@@ -1,11 +1,15 @@
-import { useAppSelector } from '@/app/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { useTick } from '@/shared/lib/hooks/useTick';
 import { formatElapsed } from '@/shared/lib/format/time';
 import { useHangupCallMutation } from '@/entities/call/api/callApi';
-import type { BundleService } from '@/entities/bundle/model/bundleSlice';
+import { vertoClient } from '@/shared/api/verto/vertoClient';
+import { destroySession } from '@/shared/api/verto/webrtcManager';
+import { vertoActions } from '@/entities/call/model/vertoSlice';
+import { bundleActions, type BundleService } from '@/entities/bundle/model/bundleSlice';
 
 type ActiveCall = {
   id: string;
+  bundleId: string;
   sideANumber: string;
   sideAUser: string;
   sideBNumber: string;
@@ -16,12 +20,19 @@ type ActiveCall = {
   isRinging: boolean;
 };
 
+const TERMINATED_STATES = new Set([
+  'hangup', 'destroy', 'completed', 'failed', 'canceled',
+  'terminated', 'disconnected', 'released', 'bye',
+]);
+
 function translateState(state: string): string {
   switch (state) {
     case 'ringing': return 'Вызов';
     case 'active': case 'connected': return 'Разговор';
+    case 'bridged': return 'Разговор';
     case 'held': return 'Удержание';
     case 'early': return 'Набор';
+    case 'unbridged': return 'Ожидание';
     default: return state;
   }
 }
@@ -29,7 +40,7 @@ function translateState(state: string): string {
 function toMs(v: unknown): number {
   if (!v) return 0;
   const n = Number(v);
-  if (n > 1e15) return n / 1000;
+  if (n > 1e15) return Math.floor(n / 1000);
   if (n > 1e12) return n;
   return n * 1000;
 }
@@ -37,7 +48,30 @@ function toMs(v: unknown): number {
 export function ActiveCallsTable() {
   const now = useTick(1000);
   const bundles = useAppSelector((s) => s.bundle);
+  const dispatch = useAppDispatch();
   const [hangupCall] = useHangupCallMutation();
+  const vertoCalls = useAppSelector((s) => s.verto.callIds);
+
+  const handleHangup = async (call: ActiveCall) => {
+    hangupCall({ callId: call.id });
+
+    if (import.meta.env.DEV) {
+      console.log('[Hangup] serviceId:', call.id, 'bundleId:', call.bundleId);
+    }
+
+    dispatch(bundleActions.removeBundle(call.bundleId));
+
+    for (const vcId of vertoCalls) {
+      try {
+        await vertoClient.bye(vcId);
+      } catch {
+        // Для ошибки!!!
+      }
+      destroySession(vcId);
+      dispatch(vertoActions.updateCallState({ callID: vcId, state: 'hangup' }));
+      setTimeout(() => dispatch(vertoActions.removeCall(vcId)), 1000);
+    }
+  };
 
   const calls: ActiveCall[] = [];
 
@@ -47,13 +81,18 @@ export function ActiveCallsTable() {
 
     const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
     for (const svc of callServices) {
+      const connState = svc.connState ?? '';
+
+      if (TERMINATED_STATES.has(connState)) continue;
+      if (svc.hangupTime) continue;
+
       const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
       const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
-      const connState = svc.connState ?? '';
       const isRinging = connState === 'ringing' || connState === 'early';
 
       calls.push({
         id: svc.id,
+        bundleId: b.id,
         sideANumber: String(svc.cgpn ?? svc['caller.commonNumber'] ?? ''),
         sideAUser: String(svc['caller.commonName'] ?? ''),
         sideBNumber: String(svc.cdpn ?? svc['callee.commonNumber'] ?? ''),
@@ -109,7 +148,7 @@ export function ActiveCallsTable() {
                 <td>
                   <button
                     className={c.isRinging ? 'cancel-call-btn' : 'hangup-btn'}
-                    onClick={() => hangupCall({ callId: c.id })}
+                    onClick={() => handleHangup(c)}
                     title={c.isRinging ? 'Отменить звонок' : 'Завершить'}
                   >
                     {c.isRinging ? '✕ Отмена' : '✕'}

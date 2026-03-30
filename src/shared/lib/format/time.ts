@@ -7,10 +7,9 @@ export function formatElapsed(totalSeconds: number): string {
 }
 
 export function formatDateTime(epoch: number): string {
-  const ms = epoch < 1e12 ? epoch * 1000 : epoch < 1e15 ? epoch / 1000 : epoch;
-  const d = new Date(ms < 1e12 ? epoch * 1000 : epoch > 1e15 ? epoch / 1000 : epoch);
+  const d = toDate(epoch);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${pad(d.getDate())} ${getMonthName(d.getMonth())} ${d.getFullYear()}`;
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${pad(d.getDate())} ${getMonthName(d.getMonth())}`;
 }
 
 function getMonthName(m: number): string {
@@ -30,7 +29,7 @@ export function elapsedSince(epoch: number): number {
 }
 
 function toMs(epoch: number): number {
-  if (epoch > 1e15) return epoch / 1000;
+  if (epoch > 1e15) return Math.floor(epoch / 1000);
   if (epoch > 1e12) return epoch;
   return epoch * 1000;
 }
