@@ -19,6 +19,7 @@ function extractErrorMessage(error: unknown): string | null {
 export function LoginForm() {
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
+  const [useVerto, setUseVerto] = useState(true);
   const navigate = useNavigate();
   const [login, { isLoading, error }] = useLoginMutation();
   const errorMessage = useMemo(() => extractErrorMessage(error as unknown), [error]);
@@ -26,8 +27,10 @@ export function LoginForm() {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      saveVertoCredentials(loginValue, password);
-      await login({ login: loginValue, password }).unwrap();
+      if (useVerto) {
+        saveVertoCredentials(loginValue, password);
+      }
+      await login({ login: loginValue, password, useVerto }).unwrap();
       navigate('/', { replace: true });
     } catch {
 
@@ -55,6 +58,14 @@ export function LoginForm() {
           autoComplete="current-password"
         />
       </div>
+      <label className="form-field form-field--checkbox">
+        <input
+          type="checkbox"
+          checked={!useVerto}
+          onChange={(e) => setUseVerto(!e.target.checked)}
+        />
+        Использовать другое устройство
+      </label>
       <button type="submit" disabled={isLoading || !loginValue || !password}>
         {isLoading ? 'Входим...' : 'Войти'}
       </button>

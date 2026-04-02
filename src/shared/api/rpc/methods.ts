@@ -18,10 +18,10 @@ export const rpcMethods = {
     filter,
   }),
 
-  userSetAvailStatus: (userId: string, availStatus: string): RpcRequest => ({
+  userSetAvailStatus: (userId: string, availStatus: string, busyStatus?: string): RpcRequest => ({
     method: 'User.Update',
     filter: { id: userId },
-    data: { availStatus },
+    data: { availStatus, ...(busyStatus != null ? { busyStatus } : {}) },
   }),
 
   callGroupSearch: (filter: Record<string, unknown> = {}): RpcRequest => ({

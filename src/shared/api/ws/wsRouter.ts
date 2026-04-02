@@ -47,6 +47,10 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
   const data = event.payload;
   if (!data || typeof data !== 'object') return;
 
+  if (import.meta.env.DEV) {
+    console.log('[WS]', event.type, data);
+  }
+
   switch (event.type) {
     case 'VirtaEvent.User.Updated': {
       const items = extractItems<User>(data);
@@ -54,7 +58,15 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
         ctx.dispatch(userActions.upsertOne(u));
         const state = ctx.getState();
         if (state.session.userId === u.id && u.availStatus != null) {
-          ctx.dispatch(setAvailStatus(u.availStatus));
+          const avail = u.availStatus;
+          const busy = u.busyStatus;
+          let compound: string;
+          if (busy && busy !== '_' && busy !== avail) {
+            compound = `${avail}_${busy}`;
+          } else {
+            compound = `${avail}_${avail}`;
+          }
+          ctx.dispatch(setAvailStatus(compound));
         }
       }
       break;
@@ -87,7 +99,24 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
     case 'VirtaEvent.BundleState.Updated': {
       const items = extractItems<Bundle>(data);
       for (const b of items) {
+        if (import.meta.env.DEV) {
+          for (const s of b.services ?? []) {
+            if (s.type === 'Call') {
+              console.log('[WS] Bundle call service:', {
+                bundleId: b.id,
+                serviceId: s.id,
+                connState: s.connState,
+                callState: s.callState,
+                hangupTime: s.hangupTime,
+              });
+            }
+          }
+        }
+
         if (isBundleTerminated(b)) {
+          if (import.meta.env.DEV) {
+            console.log('[WS] Bundle terminated, removing:', b.id);
+          }
           ctx.dispatch(bundleActions.removeBundle(b.id));
         } else {
           ctx.dispatch(bundleActions.upsertBundle(b));

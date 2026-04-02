@@ -22,6 +22,7 @@ export type SessionState = {
   vertoUrl: string | null;
   user: SessionUser | null;
   wsStatus: WsConnectionStatus;
+  useVerto: boolean;
 };
 
 const initialState: SessionState = {
@@ -34,6 +35,7 @@ const initialState: SessionState = {
   vertoUrl: null,
   user: null,
   wsStatus: 'disconnected',
+  useVerto: true,
 };
 
 export const sessionSlice = createSlice({
@@ -51,6 +53,7 @@ export const sessionSlice = createSlice({
         availStatus?: string;
         vertoUrl?: string | null;
         user?: SessionUser | null;
+        useVerto?: boolean;
       }>,
     ) {
       const p = action.payload;
@@ -64,6 +67,7 @@ export const sessionSlice = createSlice({
         vertoUrl: p.vertoUrl ?? null,
         user: p.user ?? null,
         wsStatus: 'disconnected' as const,
+        useVerto: p.useVerto ?? true,
       };
     },
     setAvailStatus(state, action: PayloadAction<string>) {

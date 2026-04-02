@@ -66,8 +66,8 @@ export function StatusDropdown() {
     setOpen(false);
     if (!userId) return;
     dispatch(setAvailStatus(value));
-    const { avail } = parseCompoundStatus(value);
-    updateStatus({ userId, availStatus: avail });
+    const { avail, sub } = parseCompoundStatus(value);
+    updateStatus({ userId, availStatus: avail, busyStatus: sub });
   };
 
   return (

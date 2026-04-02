@@ -101,9 +101,14 @@ export const vertoMiddleware: Middleware = (store) => (next) => (action) => {
     const state = s.getState();
     const session = state.session;
 
-    const vertoUrl = session.vertoUrl || env.VERTO_URL || '/verto';
-    if (session.userName) {
-      connectVerto(s, vertoUrl, session.userName);
+    if (session.useVerto) {
+      const vertoUrl = session.vertoUrl || env.VERTO_URL || '/verto';
+      if (session.userName) {
+        connectVerto(s, vertoUrl, session.userName);
+      }
+    } else {
+      store.dispatch(vertoActions.setConnectionState('disconnected'));
+      if (import.meta.env.DEV) console.log('[Verto] Skipped — user chose another device');
     }
   }
 

@@ -348,6 +348,39 @@ export class VertoClient {
     });
   }
 
+  private async sendTransferAction(action: string, destination: string, callID?: string): Promise<void> {
+    let num = destination.replace(/[-(),\s]/g, '');
+    if (num.length === 12 && num.startsWith('+7')) {
+      num = '8' + num.slice(2);
+    }
+
+    const params: Record<string, unknown> = {
+      msg: {
+        from: 'webline',
+        to: 'webline',
+        body: JSON.stringify({
+          message: action,
+          params: { dst_number: encodeURIComponent(num) },
+        }),
+      },
+      sessid: this.sessid,
+    };
+
+    if (callID) {
+      params.dialogParams = { callID };
+    }
+
+    await this.send('verto.info', params);
+  }
+
+  async blindTransfer(destination: string, callID?: string): Promise<void> {
+    await this.sendTransferAction('action.blxfer', destination, callID);
+  }
+
+  async attendedTransfer(destination: string, callID?: string): Promise<void> {
+    await this.sendTransferAction('action.attxfer', destination, callID);
+  }
+
   async dtmf(callID: string, digit: string): Promise<void> {
     await this.send('verto.info', {
       dtmf: digit,

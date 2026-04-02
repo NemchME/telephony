@@ -1,7 +1,14 @@
-import { useEffect, useRef } from 'react';
-import { useAppSelector } from '@/app/store/hooks';
-import { selectUserNumbers } from '@/entities/session/model/sessionSelectors';
-import { useMakeCallMutation, useTransferCallMutation, useConsultTransferCallMutation } from '@/entities/call/api/callApi';
+import { useEffect, useRef, useState } from 'react';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
+import {
+  selectUserNumbers,
+  selectUserCommonName,
+  selectUserName,
+  selectUseVerto,
+} from '@/entities/session/model/sessionSelectors';
+import { vertoActions } from '@/entities/call/model/vertoSlice';
+import { vertoClient } from '@/shared/api/verto/vertoClient';
+import { createOutboundSession } from '@/shared/api/verto/webrtcManager';
 
 type Props = {
   number: string;
@@ -11,22 +18,23 @@ type Props = {
 
 export function QuickDialDialog({ number, name, onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const dispatch = useAppDispatch();
   const myNumbers = useAppSelector(selectUserNumbers);
-  const bundles = useAppSelector((s) => s.bundle);
-  const [makeCall] = useMakeCallMutation();
-  const [transferCall] = useTransferCallMutation();
-  const [consultTransfer] = useConsultTransferCallMutation();
+  const myName = useAppSelector(selectUserCommonName) ?? useAppSelector(selectUserName) ?? '';
+  const useVerto = useAppSelector(selectUseVerto);
+  const vertoState = useAppSelector((s) => s.verto.connectionState);
+  const vertoCalls = useAppSelector((s) => s.verto.callIds);
+  const vertoCallMap = useAppSelector((s) => s.verto.calls);
+  const [calling, setCalling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeCallId = (() => {
-    for (const id of bundles.ids) {
-      const b = bundles.entities[id];
-      if (!b) continue;
-      for (const svc of b.services) {
-        if (svc.type === 'Call' && svc.connState) return svc.id;
-      }
-    }
-    return null;
-  })();
+  const activeVertoCallID = vertoCalls.find((id) => {
+    const c = vertoCallMap[id];
+    return c && c.state !== 'hangup' && c.state !== 'destroy';
+  }) ?? null;
+
+  const hasActiveVertoCall = activeVertoCallID !== null;
+  const mainNumber = myNumbers[0] ?? '';
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -43,22 +51,77 @@ export function QuickDialDialog({ number, name, onClose }: Props) {
     };
   }, [onClose]);
 
-  const handleCall = () => {
-    const cgpn = myNumbers[0];
-    if (!cgpn) return;
-    makeCall({ cgpn, cdpn: number });
+  const handleCall = async () => {
+    if (!useVerto || vertoState !== 'connected') {
+      setError('Verto не подключён');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    if (hasActiveVertoCall) {
+      setError('Уже есть активный звонок');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    setCalling(true);
+    try {
+      const tempCallID = crypto.randomUUID();
+      const { offerSdp } = await createOutboundSession(tempCallID);
+
+      dispatch(vertoActions.addCall({
+        callID: tempCallID,
+        direction: 'outbound',
+        destinationNumber: number,
+        callerIdName: myName,
+        callerIdNumber: mainNumber,
+        state: 'trying',
+        startedAt: Date.now(),
+      }));
+
+      const result = await vertoClient.invite(tempCallID, number, myName, mainNumber, offerSdp);
+
+      if (result.callID && result.callID !== tempCallID) {
+        dispatch(vertoActions.removeCall(tempCallID));
+        dispatch(vertoActions.addCall({
+          callID: result.callID,
+          direction: 'outbound',
+          destinationNumber: number,
+          callerIdName: myName,
+          callerIdNumber: mainNumber,
+          state: 'ringing',
+          startedAt: Date.now(),
+        }));
+      } else {
+        dispatch(vertoActions.updateCallState({ callID: tempCallID, state: 'ringing' }));
+      }
+
+      onClose();
+    } catch (err) {
+      console.error('[QuickDial] call failed:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка вызова');
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setCalling(false);
+    }
+  };
+
+  const handleBlindTransfer = async () => {
+    if (!activeVertoCallID) return;
+    try {
+      await vertoClient.blindTransfer(number, activeVertoCallID);
+    } catch (err) {
+      console.error('[QuickDial] blind transfer failed:', err);
+    }
     onClose();
   };
 
-  const handleTransfer = () => {
-    if (!activeCallId) return;
-    transferCall({ callId: activeCallId, destination: number });
-    onClose();
-  };
-
-  const handleConsultTransfer = () => {
-    if (!activeCallId) return;
-    consultTransfer({ callId: activeCallId, destination: number });
+  const handleAttendedTransfer = async () => {
+    if (!activeVertoCallID) return;
+    try {
+      await vertoClient.attendedTransfer(number, activeVertoCallID);
+    } catch (err) {
+      console.error('[QuickDial] attended transfer failed:', err);
+    }
     onClose();
   };
 
@@ -71,23 +134,28 @@ export function QuickDialDialog({ number, name, onClose }: Props) {
         </div>
         <div className="modal-dialog__body">
           <div className="quick-dial-dialog__number">{number}</div>
+          {error && <div className="quick-dial-dialog__error">{error}</div>}
           <div className="quick-dial-dialog__actions">
-            <button className="quick-dial-dialog__btn quick-dial-dialog__btn--call" onClick={handleCall}>
-              📞 Звонок
+            <button
+              className="quick-dial-dialog__btn quick-dial-dialog__btn--call"
+              onClick={handleCall}
+              disabled={calling || hasActiveVertoCall || !useVerto || vertoState !== 'connected'}
+            >
+              {calling ? '...' : '📞 Звонок'}
             </button>
             <button
               className="quick-dial-dialog__btn"
-              onClick={handleTransfer}
-              disabled={!activeCallId}
-              title={!activeCallId ? 'Нет активного вызова' : 'Перенаправить'}
+              onClick={handleBlindTransfer}
+              disabled={!hasActiveVertoCall}
+              title={!hasActiveVertoCall ? 'Нет активного вызова' : 'Перенаправить'}
             >
               ↗ Перенаправить
             </button>
             <button
               className="quick-dial-dialog__btn"
-              onClick={handleConsultTransfer}
-              disabled={!activeCallId}
-              title={!activeCallId ? 'Нет активного вызова' : 'Консультативный перевод'}
+              onClick={handleAttendedTransfer}
+              disabled={!hasActiveVertoCall}
+              title={!hasActiveVertoCall ? 'Нет активного вызова' : 'Перевод с консультацией'}
             >
               ↗↗ Конс. перевод
             </button>

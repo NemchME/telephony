@@ -3,7 +3,7 @@ import { rpcMethods } from '@/shared/api/rpc/methods';
 import { setSession, clearSession } from '@/entities/session/model/sessionSlice';
 import type { SessionUser } from '@/entities/session/model/sessionSlice';
 
-export type LoginRequest = { login: string; password: string };
+export type LoginRequest = { login: string; password: string; useVerto?: boolean };
 
 export type LoginResponse = {
   data: {
@@ -28,7 +28,7 @@ export const authApi = apiSlice.injectEndpoints({
   endpoints: (build) => ({
     login: build.mutation<LoginResponse, LoginRequest>({
       query: ({ login, password }) => rpcMethods.authenticate(login, password),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         const { data } = await queryFulfilled;
         const u = data.data.user;
 
@@ -43,6 +43,7 @@ export const authApi = apiSlice.injectEndpoints({
             ...(u?.availStatus != null ? { availStatus: u.availStatus } : {}),
             vertoUrl: data.data.vertoUrl ?? null,
             user: u ? (u as SessionUser) : null,
+            useVerto: arg.useVerto ?? true,
           }),
         );
       },
