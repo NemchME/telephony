@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAppSelector } from '@/app/store/hooks';
+import { selectUserId } from '@/entities/session/model/sessionSelectors';
+import { useUpdateUserSettingsMutation } from '@/entities/user/api/userApi';
+import { selectUserEntities } from '@/entities/user/model/userSelectors';
 
 const RINGTONES = [
   'Asterisk_ring1', 'Asterisk_ring2', 'Asterisk_ring3', 'Asterisk_ring4',
@@ -7,24 +11,37 @@ const RINGTONES = [
   'Asterisk_ring13', 'Asterisk_ring14', 'Asterisk_ring15', 'Asterisk_ring16',
 ];
 
-const LS_RINGTONE = 'settings.ringtone';
-const LS_END_SOUND = 'settings.endCallSound';
 const LS_STUN = 'settings.useStun';
 
-function loadSetting(key: string, def: string): string {
-  try { return localStorage.getItem(key) ?? def; } catch { return def; }
-}
+type ServerSettings = {
+  ringtone?: string;
+  endCallSound?: boolean;
+};
 
-function loadBool(key: string, def: boolean): boolean {
+function loadStun(): boolean {
   try {
-    const v = localStorage.getItem(key);
-    if (v === null) return def;
+    const v = localStorage.getItem(LS_STUN);
+    if (v === null) return false;
     return v === 'true';
-  } catch { return def; }
+  } catch { return false; }
 }
 
-function saveSetting(key: string, val: string) {
-  try { localStorage.setItem(key, val); } catch {}
+function parseServerSettings(raw: string | undefined | null): ServerSettings {
+  if (!raw) return {};
+  try { return JSON.parse(raw) as ServerSettings; } catch { return {}; }
+}
+
+export function getSettings(userSettingsJson: string | undefined | null): {
+  ringtone: string;
+  endCallSound: boolean;
+  useStun: boolean;
+} {
+  const s = parseServerSettings(userSettingsJson);
+  return {
+    ringtone: s.ringtone ?? 'Asterisk_ring1',
+    endCallSound: s.endCallSound ?? true,
+    useStun: loadStun(),
+  };
 }
 
 type Props = {
@@ -34,9 +51,15 @@ type Props = {
 export function SettingsModal({ onClose }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [ringtone, setRingtone] = useState(() => loadSetting(LS_RINGTONE, 'Asterisk_ring1'));
-  const [endCallSound, setEndCallSound] = useState(() => loadBool(LS_END_SOUND, true));
-  const [useStun, setUseStun] = useState(() => loadBool(LS_STUN, false));
+  const userId = useAppSelector(selectUserId);
+  const userEntities = useAppSelector(selectUserEntities);
+  const user = userId ? userEntities[userId] : undefined;
+  const serverSettings = parseServerSettings(user?.settings);
+  const [updateSettings] = useUpdateUserSettingsMutation();
+
+  const [ringtone, setRingtone] = useState(serverSettings.ringtone ?? 'Asterisk_ring1');
+  const [endCallSound, setEndCallSound] = useState(serverSettings.endCallSound ?? true);
+  const [useStun, setUseStun] = useState(loadStun);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -44,9 +67,15 @@ export function SettingsModal({ onClose }: Props) {
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  const saveToServer = (newRingtone: string, newEndCallSound: boolean) => {
+    if (!userId) return;
+    const json: ServerSettings = { ringtone: newRingtone, endCallSound: newEndCallSound };
+    updateSettings({ userId, settings: JSON.stringify(json) });
+  };
+
   const handleRingtoneChange = (name: string) => {
     setRingtone(name);
-    saveSetting(LS_RINGTONE, name);
+    saveToServer(name, endCallSound);
   };
 
   const handlePlayRingtone = (name: string) => {
@@ -61,12 +90,12 @@ export function SettingsModal({ onClose }: Props) {
 
   const handleEndCallSoundChange = (v: boolean) => {
     setEndCallSound(v);
-    saveSetting(LS_END_SOUND, String(v));
+    saveToServer(ringtone, v);
   };
 
   const handleUseStunChange = (v: boolean) => {
     setUseStun(v);
-    saveSetting(LS_STUN, String(v));
+    try { localStorage.setItem(LS_STUN, String(v)); } catch {}
   };
 
   return (

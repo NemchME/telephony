@@ -11,6 +11,7 @@ export type User = {
   authorized?: number;
   domainID?: string;
   maxCalls?: number;
+  settings?: string;
 };
 
 export type UserStateRecord = {

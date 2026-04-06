@@ -52,9 +52,7 @@ export class VertoClient {
   private pending = new Map<number, PendingRequest>();
   private sessid: string = '';
   private _connected = false;
-  private handlers: VertoEventHandler = {};
-  private _login = '';
-  private _password = '';
+  private handlers: VertoEventHandler = {}
 
   get connected() { return this._connected; }
   get sessionId() { return this.sessid; }
@@ -64,8 +62,6 @@ export class VertoClient {
   }
 
   connect(url: string, login: string, password: string): Promise<void> {
-    this._login = login;
-    this._password = password;
 
     return new Promise((resolve, reject) => {
       try {

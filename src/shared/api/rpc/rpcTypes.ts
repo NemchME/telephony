@@ -2,6 +2,7 @@ export type RpcRequest<TData = unknown, TFilter = unknown> = {
   method: string;
   data?: TData;
   filter?: TFilter;
+  params?: Record<string, unknown>;
   token?: string;
 };
 

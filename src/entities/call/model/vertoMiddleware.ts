@@ -152,7 +152,7 @@ async function connectVerto(
         callerIdNumber: call.callerIdNumber,
         state: call.state,
         startedAt: Date.now(),
-        remoteSdp: call.remoteSdp,
+        remoteSdp: call.remoteSdp ?? '',
       }));
 
       if (call.direction === 'inbound' && call.remoteSdp) {

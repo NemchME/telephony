@@ -105,26 +105,6 @@ export function QuickDialDialog({ number, name, onClose }: Props) {
     }
   };
 
-  const handleBlindTransfer = async () => {
-    if (!activeVertoCallID) return;
-    try {
-      await vertoClient.blindTransfer(number, activeVertoCallID);
-    } catch (err) {
-      console.error('[QuickDial] blind transfer failed:', err);
-    }
-    onClose();
-  };
-
-  const handleAttendedTransfer = async () => {
-    if (!activeVertoCallID) return;
-    try {
-      await vertoClient.attendedTransfer(number, activeVertoCallID);
-    } catch (err) {
-      console.error('[QuickDial] attended transfer failed:', err);
-    }
-    onClose();
-  };
-
   return (
     <div className="modal-overlay">
       <div className="modal-dialog quick-dial-dialog" ref={ref}>
@@ -142,22 +122,6 @@ export function QuickDialDialog({ number, name, onClose }: Props) {
               disabled={calling || hasActiveVertoCall || !useVerto || vertoState !== 'connected'}
             >
               {calling ? '...' : '📞 Звонок'}
-            </button>
-            <button
-              className="quick-dial-dialog__btn"
-              onClick={handleBlindTransfer}
-              disabled={!hasActiveVertoCall}
-              title={!hasActiveVertoCall ? 'Нет активного вызова' : 'Перенаправить'}
-            >
-              ↗ Перенаправить
-            </button>
-            <button
-              className="quick-dial-dialog__btn"
-              onClick={handleAttendedTransfer}
-              disabled={!hasActiveVertoCall}
-              title={!hasActiveVertoCall ? 'Нет активного вызова' : 'Перевод с консультацией'}
-            >
-              ↗↗ Конс. перевод
             </button>
           </div>
         </div>

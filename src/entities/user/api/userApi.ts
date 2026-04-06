@@ -42,6 +42,10 @@ export const userApi = apiSlice.injectEndpoints({
       query: ({ userId, availStatus, busyStatus }) => rpcMethods.userSetAvailStatus(userId, availStatus, busyStatus),
       invalidatesTags: ['User', 'UserState'],
     }),
+
+    updateUserSettings: build.mutation<void, { userId: string; settings: string }>({
+      query: ({ userId, settings }) => rpcMethods.userUpdateSettings(userId, settings),
+    }),
   }),
 });
 
@@ -49,4 +53,5 @@ export const {
   useUsersQuery,
   useUserStatesQuery,
   useUpdateMyAvailStatusMutation,
+  useUpdateUserSettingsMutation,
 } = userApi;

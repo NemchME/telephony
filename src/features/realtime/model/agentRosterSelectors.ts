@@ -28,11 +28,13 @@ export type AgentRow = {
   username: string;
   numbers: string[];
   availStatus: string;
+  busyStatus: string;
   availStatusLabel: string;
   networkStatus: number;
   busyCount: number;
   agentStatus: string;
   lastModifiedStatus: number | undefined;
+  lastModifiedUserState: number | undefined;
   presence: UiPresence;
   agentEnabled: boolean;
 };
@@ -87,6 +89,7 @@ export const selectRoster = createSelector(
   (userEntities, userIds, userStates, groups, agents, agentStates, groupStates, groupOrder) => {
     const groupMap = new Map(groups.map((g) => [g.id, g]));
 
+    userIds = userIds;
     const orderedGroupIds = [...groupOrder];
     for (const g of groups) {
       if (!orderedGroupIds.includes(g.id)) orderedGroupIds.push(g.id);
@@ -104,6 +107,7 @@ export const selectRoster = createSelector(
 
     const agentsByGroup = new Map<string, string[]>();
     for (const a of agents) {
+      if (a.status === 0) continue;
       const arr = agentsByGroup.get(a.callGroupID) ?? [];
       arr.push(a.userID);
       agentsByGroup.set(a.callGroupID, arr);
@@ -154,11 +158,13 @@ export const selectRoster = createSelector(
           username: user.name ?? uid,
           numbers: user.numbers ?? [],
           availStatus: user.availStatus ?? 'avail',
+          busyStatus: user.busyStatus ?? '_',
           availStatusLabel: AVAIL_LABELS[user.availStatus ?? ''] ?? user.availStatus ?? '',
           networkStatus: uState?.networkStatus ?? -1,
           busyCount: uState?.busyCount ?? 0,
           agentStatus: agentSt?.status ?? '__undef__',
           lastModifiedStatus: agentSt?.lastModifiedStatus,
+          lastModifiedUserState: uState?.lastModified,
           presence,
           agentEnabled: agentCfg?.status === 1,
         });

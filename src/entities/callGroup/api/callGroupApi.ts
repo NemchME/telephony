@@ -60,6 +60,14 @@ export const callGroupApi = apiSlice.injectEndpoints({
     resetAgentState: build.mutation<unknown, { callGroupID: string; userID: string }>({
       query: ({ callGroupID, userID }) => rpcMethods.callGroupAgentStateReset(callGroupID, userID),
     }),
+
+    resetUserState: build.mutation<unknown, { userID: string }>({
+      query: ({ userID }) => rpcMethods.cmdResetUserState(userID),
+    }),
+
+    updateAgentStatus: build.mutation<unknown, { callGroupID: string; userID: string; status: number }>({
+      query: ({ callGroupID, userID, status }) => rpcMethods.callGroupAgentUpdate(callGroupID, userID, status),
+    }),
   }),
 });
 
@@ -69,4 +77,6 @@ export const {
   useGetCallGroupAgentStatesQuery,
   useGetCallGroupStatesQuery,
   useResetAgentStateMutation,
+  useResetUserStateMutation,
+  useUpdateAgentStatusMutation,
 } = callGroupApi;

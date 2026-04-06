@@ -6,6 +6,11 @@ import { vertoClient } from '@/shared/api/verto/vertoClient';
 import { destroySession } from '@/shared/api/verto/webrtcManager';
 import { vertoActions } from '@/entities/call/model/vertoSlice';
 import { bundleActions, type BundleService } from '@/entities/bundle/model/bundleSlice';
+import {
+  selectUserCommonName,
+  selectUserName,
+  selectUserNumbers,
+} from '@/entities/session/model/sessionSelectors';
 
 type ActiveCall = {
   id: string;
@@ -18,6 +23,7 @@ type ActiveCall = {
   dialedNumber: string;
   talkTime: number;
   isRinging: boolean;
+  isVertoOnly?: boolean;
 };
 
 const TERMINATED_STATES = new Set([
@@ -28,11 +34,13 @@ const TERMINATED_STATES = new Set([
 function translateState(state: string): string {
   switch (state) {
     case 'ringing': return 'Вызов';
+    case 'trying': return 'Набор';
     case 'active': case 'connected': return 'Разговор';
     case 'bridged': return 'Разговор';
     case 'held': return 'Удержание';
     case 'early': return 'Набор';
     case 'unbridged': return 'Ожидание';
+    case 'routing': return 'Маршрутизация';
     default: return state;
   }
 }
@@ -50,22 +58,30 @@ export function ActiveCallsTable() {
   const bundles = useAppSelector((s) => s.bundle);
   const dispatch = useAppDispatch();
   const [hangupCall] = useHangupCallMutation();
-  const vertoCalls = useAppSelector((s) => s.verto.callIds);
+  const vertoCallIds = useAppSelector((s) => s.verto.callIds);
+  const vertoCallMap = useAppSelector((s) => s.verto.calls);
+  const myName = useAppSelector(selectUserCommonName) ?? useAppSelector(selectUserName) ?? '';
+  const myNumbers = useAppSelector(selectUserNumbers);
+  const myNumber = myNumbers[0] ?? '';
 
   const handleHangup = async (call: ActiveCall) => {
-    hangupCall({ callId: call.id });
+    if (!call.isVertoOnly) {
+      hangupCall({ callId: call.id });
+    }
 
     if (import.meta.env.DEV) {
       console.log('[Hangup] serviceId:', call.id, 'bundleId:', call.bundleId);
     }
 
-    dispatch(bundleActions.removeBundle(call.bundleId));
+    if (call.bundleId) {
+      dispatch(bundleActions.removeBundle(call.bundleId));
+    }
 
-    for (const vcId of vertoCalls) {
+    for (const vcId of vertoCallIds) {
       try {
         await vertoClient.bye(vcId);
       } catch {
-        // Для ошибки!!!
+        // ignore
       }
       destroySession(vcId);
       dispatch(vertoActions.updateCallState({ callID: vcId, state: 'hangup' }));
@@ -74,21 +90,32 @@ export function ActiveCallsTable() {
   };
 
   const calls: ActiveCall[] = [];
+  const vertoCallIdsInBundles = new Set<string>();
 
   for (const id of bundles.ids) {
     const b = bundles.entities[id];
     if (!b) continue;
 
     const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
+    const routingServices = b.services.filter((s: BundleService) => s.type === 'Routing');
+
+    let hasActiveCalls = false;
+
     for (const svc of callServices) {
       const connState = svc.connState ?? '';
 
       if (TERMINATED_STATES.has(connState)) continue;
       if (svc.hangupTime) continue;
 
+      hasActiveCalls = true;
       const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
       const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
       const isRinging = connState === 'ringing' || connState === 'early';
+
+      const svcCgpn = String(svc.cgpn ?? '');
+      if (myNumber && svcCgpn.includes(myNumber)) {
+        for (const vcId of vertoCallIds) vertoCallIdsInBundles.add(vcId);
+      }
 
       calls.push({
         id: svc.id,
@@ -103,6 +130,59 @@ export function ActiveCallsTable() {
         isRinging,
       });
     }
+
+    if (!hasActiveCalls) {
+      for (const svc of routingServices) {
+        const connState = svc.connState ?? '';
+        if (TERMINATED_STATES.has(connState)) continue;
+        if (svc.hangupTime) continue;
+
+        const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
+        const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
+
+        const svcCgpn = String(svc.cgpn ?? '');
+        if (myNumber && svcCgpn.includes(myNumber)) {
+          for (const vcId of vertoCallIds) vertoCallIdsInBundles.add(vcId);
+        }
+
+        calls.push({
+          id: svc.id,
+          bundleId: b.id,
+          sideANumber: String(svc.cgpn ?? svc['caller.commonNumber'] ?? ''),
+          sideAUser: String(svc['caller.commonName'] ?? ''),
+          sideBNumber: String(svc.cdpn ?? svc['callee.commonNumber'] ?? ''),
+          sideBUser: String(svc['callee.commonName'] ?? ''),
+          state: connState || 'routing',
+          dialedNumber: String(svc.cdpn ?? ''),
+          talkTime: elapsed,
+          isRinging: true,
+        });
+      }
+    }
+  }
+
+  for (const vcId of vertoCallIds) {
+    if (vertoCallIdsInBundles.has(vcId)) continue;
+    const vc = vertoCallMap[vcId];
+    if (!vc) continue;
+    if (vc.state === 'hangup' || vc.state === 'destroy') continue;
+
+    const elapsed = vc.startedAt ? Math.max(0, Math.floor((now - vc.startedAt) / 1000)) : 0;
+    const isRinging = vc.state === 'trying' || vc.state === 'ringing' || vc.state === 'early';
+
+    calls.push({
+      id: vcId,
+      bundleId: '',
+      sideANumber: vc.direction === 'outbound' ? myNumber : (vc.callerIdNumber ?? ''),
+      sideAUser: vc.direction === 'outbound' ? myName : (vc.callerIdName ?? ''),
+      sideBNumber: vc.direction === 'outbound' ? (vc.destinationNumber ?? '') : myNumber,
+      sideBUser: vc.direction === 'outbound' ? '' : myName,
+      state: vc.state ?? 'trying',
+      dialedNumber: vc.destinationNumber ?? '',
+      talkTime: elapsed,
+      isRinging,
+      isVertoOnly: true,
+    });
   }
 
   return (

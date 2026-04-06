@@ -11,3 +11,4 @@ export const selectVertoUrl = (s: RootState) => s.session.vertoUrl;
 export const selectIsAuthed = (s: RootState) => Boolean(s.session.sessionID);
 export const selectWsStatus = (s: RootState) => s.session.wsStatus;
 export const selectUseVerto = (s: RootState) => s.session.useVerto;
+export const selectUserAdminStatus = (s: RootState) => s.session.user?.adminStatus;

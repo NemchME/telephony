@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useCdrSearchQuery, type CdrRow } from '@/entities/cdr/api/cdrApi';
 import { formatDateTime, formatElapsed } from '@/shared/lib/format/time';
+import { QuickDialDialog } from './QuickDialDialog';
 
 const LS_ROWS_KEY = 'cdr.rowsPerPage';
 
@@ -26,6 +27,7 @@ function toMs(v: unknown): number {
 export function CallHistoryPanel() {
   const [rowsPerPage, setRowsPerPage] = useState(getRowsPerPage);
   const [offset, setOffset] = useState(0);
+  const [quickDial, setQuickDial] = useState<{ number: string; name: string } | null>(null);
 
   const filter = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
@@ -44,6 +46,12 @@ export function CallHistoryPanel() {
     setRowsPerPage(val);
     setRowsPerPageLS(val);
     setOffset(0);
+  };
+
+  const handleCallNumber = (number: string, name: string) => {
+    if (number) {
+      setQuickDial({ number, name: name || number });
+    }
   };
 
   return (
@@ -82,8 +90,20 @@ export function CallHistoryPanel() {
               return (
                 <tr key={r.id ?? i}>
                   <td>{createdMs ? formatDateTime(createdMs) : ''}</td>
-                  <td>{number}</td>
-                  <td>{name}</td>
+                  <td>
+                    {number ? (
+                      <span className="cdr-link" onClick={() => handleCallNumber(number, name)} title={`Позвонить: ${number}`}>
+                        {number}
+                      </span>
+                    ) : ''}
+                  </td>
+                  <td>
+                    {name ? (
+                      <span className="cdr-link" onClick={() => handleCallNumber(number, name)} title={`Позвонить: ${number}`}>
+                        {name}
+                      </span>
+                    ) : ''}
+                  </td>
                   <td>{callType}</td>
                   <td>{duration > 0 ? formatElapsed(duration) : ''}</td>
                 </tr>
@@ -107,6 +127,14 @@ export function CallHistoryPanel() {
           <option value={100}>100</option>
         </select>
       </div>
+
+      {quickDial && (
+        <QuickDialDialog
+          number={quickDial.number}
+          name={quickDial.name}
+          onClose={() => setQuickDial(null)}
+        />
+      )}
     </div>
   );
 }

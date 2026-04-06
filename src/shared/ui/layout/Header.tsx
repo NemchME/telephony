@@ -12,11 +12,12 @@ import { useTerminateMutation } from '@/entities/session/api/authApi';
 import { vertoActions } from '@/entities/call/model/vertoSlice';
 import { answerInboundCall, rejectInboundCall, stopRingtone } from '@/entities/call/model/vertoMiddleware';
 import { vertoClient } from '@/shared/api/verto/vertoClient';
-import { createOutboundSession, destroySession, toggleMute, isMuted } from '@/shared/api/verto/webrtcManager';
+import { createOutboundSession, destroySession, toggleMute } from '@/shared/api/verto/webrtcManager';
 import { useHangupCallMutation } from '@/entities/call/api/callApi';
 import { useUpdateMyAvailStatusMutation } from '@/entities/user/api/userApi';
 import { bundleActions, type BundleService } from '@/entities/bundle/model/bundleSlice';
 import { useStore } from 'react-redux';
+import { selectCallGroups } from '@/entities/callGroup/model/callGroupSelectors';
 import { StatusDropdown } from '@/pages/MainPage/ui/StatusDropdown';
 import { SettingsModal } from '@/pages/MainPage/ui/SettingsModal';
 import { UserGroupsModal } from '@/pages/MainPage/ui/UserGroupsModal';
@@ -50,6 +51,7 @@ export function Header() {
   const myNetworkStatus = useAppSelector((s) => userId ? s.user.states[userId]?.networkStatus : undefined);
 
   const allUsers = useAppSelector((s) => s.user);
+  const callGroups = useAppSelector(selectCallGroups);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -62,7 +64,29 @@ export function Header() {
     const q = phoneInput.trim().toLowerCase();
     if (!q || q.length < 1) return [];
     const results: { id: string; label: string; number: string }[] = [];
+
+    // Groups
+    for (const g of callGroups) {
+      const gName = (g.commonName ?? g.name ?? '').toLowerCase();
+      const nums = g.numbers ?? [];
+      const nameMatch = gName.includes(q);
+      const numMatch = nums.some((n) => n.includes(q));
+      if (nameMatch || numMatch) {
+        const num = nums[0] ?? '';
+        if (num) {
+          results.push({
+            id: `g-${g.id}`,
+            label: `👥 ${g.commonName ?? g.name} (${num})`,
+            number: num,
+          });
+        }
+      }
+      if (results.length >= 8) break;
+    }
+
+    // Users
     for (const uid of allUsers.ids) {
+      if (results.length >= 8) break;
       const u = allUsers.entities[uid];
       if (!u || uid === userId) continue;
       const name = (u.commonName ?? u.name ?? '').toLowerCase();
@@ -79,10 +103,9 @@ export function Header() {
           });
         }
       }
-      if (results.length >= 8) break;
     }
     return results;
-  }, [phoneInput, allUsers, userId]);
+  }, [phoneInput, allUsers, callGroups, userId]);
 
   const incomingCall = vertoCalls
     .map((id) => vertoCallMap[id])
@@ -121,8 +144,17 @@ export function Header() {
   const resolveToNumber = useCallback((input: string): string | null => {
     const q = input.trim();
     if (!q) return null;
-    if (/^[\d+\-() ]+$/.test(q)) return q;
+    if (/^[\d+\-() #]+$/.test(q)) return q;
     const lower = q.toLowerCase();
+    // Search groups first
+    for (const g of callGroups) {
+      const gName = (g.commonName ?? g.name ?? '').toLowerCase();
+      if (gName === lower || gName.includes(lower)) {
+        const num = g.numbers?.[0];
+        if (num) return num;
+      }
+    }
+    // Then users
     for (const uid of allUsers.ids) {
       const u = allUsers.entities[uid];
       if (!u) continue;
@@ -133,7 +165,7 @@ export function Header() {
       }
     }
     return q;
-  }, [allUsers]);
+  }, [allUsers, callGroups]);
 
   const handleMakeCall = useCallback(async () => {
     const cdpn = resolveToNumber(phoneInput);
@@ -233,7 +265,6 @@ export function Header() {
     setMuted(nowMuted);
   }, [activeCallID]);
 
-  const activeBundleId = bundles.ids[0] ?? null;
 
   const [isConsulting, setIsConsulting] = useState(false);
 
@@ -304,7 +335,7 @@ export function Header() {
       }
       if (e.key === 'Enter' && suggestionIndex >= 0) {
         e.preventDefault();
-        handleSelectSuggestion(suggestions[suggestionIndex].number);
+        handleSelectSuggestion(suggestions[suggestionIndex]!.number);
         return;
       }
       if (e.key === 'Escape') {
@@ -361,10 +392,11 @@ export function Header() {
         )}
 
         {!useVerto ? (
-          <span className="header__device-msg">
+          <span className={`header__device-msg ${myNetworkStatus === 1 ? 'header__device-msg--online' : 'header__device-msg--offline'}`}>
+            <span className={`status-dot ${myNetworkStatus === 1 ? 'status-dot--online' : 'status-dot--offline'}`} />
             {myNetworkStatus === 1
-              ? 'Вы пользуетесь другим устройством'
-              : 'Не подключено ни одно устройство. Вы находитесь offline'}
+              ? 'Другое устройство подключено (online)'
+              : 'Нет подключённых устройств (offline)'}
           </span>
         ) : (
           <>

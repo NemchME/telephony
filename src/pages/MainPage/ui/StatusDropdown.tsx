@@ -34,6 +34,13 @@ export function getStatusLabel(compound: string): string {
   return base?.label ?? compound;
 }
 
+export function getUserStatusLabel(availStatus: string, busyStatus: string): string {
+  if (busyStatus && busyStatus !== '_' && busyStatus !== availStatus) {
+    return getStatusLabel(`${availStatus}_${busyStatus}`);
+  }
+  return getStatusLabel(`${availStatus}_${availStatus}`);
+}
+
 export function statusToDotClass(compound: string): string {
   const { avail } = parseCompoundStatus(compound);
   if (avail === 'dnd') return 'status-dot--dnd';

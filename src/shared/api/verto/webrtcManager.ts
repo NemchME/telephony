@@ -178,7 +178,7 @@ export function toggleMute(callID: string): boolean {
   const session = activeSessions.get(callID);
   if (!session) return false;
   const audioTracks = session.localStream.getAudioTracks();
-  const muted = audioTracks.length > 0 && audioTracks[0].enabled;
+  const muted = audioTracks.length > 0 && audioTracks[0]!.enabled;
   for (const track of audioTracks) {
     track.enabled = !muted;
   }
@@ -189,7 +189,7 @@ export function isMuted(callID: string): boolean {
   const session = activeSessions.get(callID);
   if (!session) return false;
   const audioTracks = session.localStream.getAudioTracks();
-  return audioTracks.length > 0 && !audioTracks[0].enabled;
+  return audioTracks.length > 0 && !audioTracks[0]!.enabled;
 }
 
 export function destroyAllSessions() {

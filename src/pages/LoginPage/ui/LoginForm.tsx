@@ -69,13 +69,15 @@ export function LoginForm() {
       <button type="submit" disabled={isLoading || !loginValue || !password}>
         {isLoading ? 'Входим...' : 'Войти'}
       </button>
-      <button
-        type="button"
-        className="dev-btn"
-        onClick={() => { setLoginValue('dev1'); setPassword('dev1_101'); }}
-      >
-        Подставить dev1
-      </button>
+      {import.meta.env.DEV && (
+        <button
+          type="button"
+          className="dev-btn"
+          onClick={() => { setLoginValue('dev1'); setPassword('dev1_101'); }}
+        >
+          Подставить dev1
+        </button>
+      )}
     </form>
   );
 }

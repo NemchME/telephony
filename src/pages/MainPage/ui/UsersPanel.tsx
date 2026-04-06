@@ -6,15 +6,16 @@ import { groupOrderActions } from '@/features/realtime/model/groupOrderSlice';
 import { useDragReorder } from '@/shared/lib/hooks/useDragReorder';
 import { useTick } from '@/shared/lib/hooks/useTick';
 import { formatElapsed, elapsedSince } from '@/shared/lib/format/time';
-import { useResetAgentStateMutation } from '@/entities/callGroup/api/callGroupApi';
+import { useResetUserStateMutation } from '@/entities/callGroup/api/callGroupApi';
 import { selectCallGroups } from '@/entities/callGroup/model/callGroupSelectors';
+import { selectUserAdminStatus } from '@/entities/session/model/sessionSelectors';
 import {
   viewSettingsActions,
   selectHideInactive,
   selectShowDuration,
   selectHiddenGroups,
 } from '@/features/realtime/model/viewSettingsSlice';
-import { getStatusLabel } from './StatusDropdown';
+import { getUserStatusLabel } from './StatusDropdown';
 import { QuickDialDialog } from './QuickDialDialog';
 
 export function UsersPanel() {
@@ -26,6 +27,8 @@ export function UsersPanel() {
   const showDuration = useAppSelector(selectShowDuration);
   const hiddenGroups = useAppSelector(selectHiddenGroups);
   const allGroups = useAppSelector(selectCallGroups);
+  const adminStatus = useAppSelector(selectUserAdminStatus);
+  const isAdminOrSupervisor = adminStatus === 1 || adminStatus === 2;
 
   const filteredRoster = roster.filter((row) => {
     if (row.kind === 'group') {
@@ -124,7 +127,7 @@ export function UsersPanel() {
         </div>
       </div>
 
-      <div>
+      <div className="roster-table">
         {filteredRoster.map((row) => {
           if (row.kind === 'group') {
             currentGroupDragIndex++;
@@ -140,6 +143,7 @@ export function UsersPanel() {
                 onDragLeave={onDragLeave}
                 onDrop={onDrop(gIdx)}
                 onDragEnd={onDragEnd}
+                onQuickDial={setQuickDial}
               />
             );
           }
@@ -150,6 +154,7 @@ export function UsersPanel() {
               now={now}
               showDuration={showDuration}
               onQuickDial={setQuickDial}
+              isAdminOrSupervisor={isAdminOrSupervisor}
             />
           );
         })}
@@ -174,6 +179,7 @@ function GroupRow({
   onDragLeave,
   onDrop,
   onDragEnd,
+  onQuickDial,
 }: {
   row: GroupHeaderRow;
   dragIndex: number;
@@ -183,7 +189,17 @@ function GroupRow({
   onDragLeave: () => void;
   onDrop: (e: React.DragEvent) => void;
   onDragEnd: () => void;
+  onQuickDial: (info: { number: string; name: string }) => void;
 }) {
+  const handleNumberClick = (num: string) => {
+    onQuickDial({ number: num, name: row.groupName });
+  };
+
+  const handleGroupNameClick = () => {
+    const num = row.numbers[0];
+    if (num) onQuickDial({ number: num, name: row.groupName });
+  };
+
   return (
     <div
       className={`user-list__group ${isDragOver ? 'drag-over' : ''}`}
@@ -194,12 +210,31 @@ function GroupRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <span className="status-dot status-dot--online" />
-      <strong>{row.groupName}</strong>
+      <img src="/icons/group.svg" alt="" className="group-icon" />
+      <strong
+        className={row.numbers.length > 0 ? 'group-name--clickable' : ''}
+        onClick={handleGroupNameClick}
+        title={row.numbers.length > 0 ? `Позвонить: ${row.groupName}` : undefined}
+      >
+        {row.groupName}
+      </strong>
       {row.numbers.map((n, i) => (
-        <span key={i} className="badge">{n}</span>
+        <span
+          key={i}
+          className="badge badge--clickable"
+          title={`Позвонить: ${n}`}
+          onClick={() => handleNumberClick(n)}
+        >
+          📞 {n}
+        </span>
       ))}
-      <span className="badge">{row.groupTechName}</span>
+      <span
+        className="badge badge--clickable"
+        title={row.numbers[0] ? `Позвонить: ${row.groupTechName}` : undefined}
+        onClick={handleGroupNameClick}
+      >
+        {row.groupTechName}
+      </span>
       {row.queueLength > 0 && (
         <span className="sidebar__queue-badge">{row.queueLength}</span>
       )}
@@ -211,57 +246,87 @@ function AgentRowItem({
   row,
   showDuration,
   onQuickDial,
+  isAdminOrSupervisor,
 }: {
   row: AgentRow;
   now: number;
   showDuration: boolean;
   onQuickDial: (info: { number: string; name: string }) => void;
+  isAdminOrSupervisor: boolean;
 }) {
   const dotClass = presenceToDotClass(row.presence);
-  const elapsed = row.lastModifiedStatus ? elapsedSince(row.lastModifiedStatus) : null;
+  const statusTime = row.lastModifiedUserState ?? row.lastModifiedStatus;
+  const elapsed = statusTime ? elapsedSince(statusTime) : null;
   const busyLabel = row.busyCount > 0 ? 'Разг.' : 'Не разг.';
-  const [resetState] = useResetAgentStateMutation();
+  const [resetUserState] = useResetUserStateMutation();
 
   const isWebClientActive = row.networkStatus === 1;
+
+  const statusLabel = getUserStatusLabel(row.availStatus, row.busyStatus);
 
   const handleNumberClick = (cdpn: string) => {
     onQuickDial({ number: cdpn, name: row.displayName });
   };
 
+  const handleUsernameClick = () => {
+    const num = row.numbers[0];
+    if (num) {
+      onQuickDial({ number: num, name: row.displayName });
+    }
+  };
+
   const handleResetState = () => {
-    resetState({ callGroupID: row.groupId, userID: row.userId });
+    resetUserState({ userID: row.userId });
   };
 
   return (
     <div className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''}`}>
-      {isWebClientActive && (
-        <span className="web-client-icon" title="Веб-клиент активен">🌐</span>
-      )}
+      <span className="user-list__col--icon">
+        {isWebClientActive && <span className="web-client-icon" title="Веб-клиент активен">🌐</span>}
+      </span>
       <span className={`status-dot ${dotClass}`} />
-      <span className="user-list__agent-name">{row.displayName}</span>
-      {row.numbers.map((n, i) => (
-        <span
-          key={i}
-          className="badge badge--clickable"
-          title={`Действия: ${n}`}
-          onClick={() => handleNumberClick(n)}
-        >
-          📞 {n}
-        </span>
-      ))}
-      <span className="badge">{row.username}</span>
-      <span className="badge">{getStatusLabel(row.availStatus)}</span>
-      {showDuration && elapsed !== null && <span className="badge">{formatElapsed(elapsed)}</span>}
-      <span className="badge">{busyLabel}</span>
-      {row.groupId !== '__standalone__' && (
-        <button
-          className="user-list__refresh-btn"
-          onClick={handleResetState}
-          title="Сбросить состояние пользователя"
-        >
-          ↻
-        </button>
-      )}
+      <span
+        className="user-list__agent-name user-list__agent-name--clickable"
+        onClick={handleUsernameClick}
+        title={row.numbers[0] ? `Позвонить ${row.displayName}` : undefined}
+      >
+        {row.displayName}
+      </span>
+      <span className="user-list__col--numbers">
+        {row.numbers.map((n, i) => (
+          <span
+            key={i}
+            className="badge badge--clickable"
+            title={`Действия: ${n}`}
+            onClick={() => handleNumberClick(n)}
+          >
+            📞 {n}
+          </span>
+        ))}
+      </span>
+      <span
+        className="user-list__col--username badge badge--clickable"
+        title={`Позвонить ${row.displayName}`}
+        onClick={handleUsernameClick}
+      >
+        {row.username}
+      </span>
+      <span className="user-list__col--status badge">{statusLabel}</span>
+      <span className="user-list__col--time badge">
+        {showDuration && elapsed !== null ? formatElapsed(elapsed) : ''}
+      </span>
+      <span className="user-list__col--busy badge">{busyLabel}</span>
+      <span className="user-list__col--actions">
+        {isAdminOrSupervisor && (
+          <button
+            className="user-list__refresh-btn"
+            onClick={handleResetState}
+            title="Сбросить состояние пользователя"
+          >
+            ↻
+          </button>
+        )}
+      </span>
     </div>
   );
 }

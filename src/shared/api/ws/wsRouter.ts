@@ -31,9 +31,9 @@ function isServiceTerminated(s: BundleService): boolean {
 
 function isBundleTerminated(b: Bundle): boolean {
   if (!b.services || b.services.length === 0) return false;
-  const callServices = b.services.filter((s: BundleService) => s.type === 'Call');
-  if (callServices.length === 0) return false;
-  return callServices.every(isServiceTerminated);
+  const activeServices = b.services.filter((s: BundleService) => s.type === 'Call' || s.type === 'Routing');
+  if (activeServices.length === 0) return false;
+  return activeServices.every(isServiceTerminated);
 }
 
 function extractItems<T>(payload: unknown): T[] {

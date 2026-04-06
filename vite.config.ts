@@ -9,26 +9,50 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
-server: {
-  proxy: {
-    "/api": {
-      target: "https://m-dev3.vrn.ru",
-      changeOrigin: true,
-      secure: false,
-      cookieDomainRewrite: "localhost",
-    },
-    "/ws": {
-      target: "wss://m-dev3.vrn.ru",
-      ws: true,
-      changeOrigin: true,
-      secure: false,
-    },
-    "/verto": {
-      target: "wss://m-dev3.vrn.ru:8082",
-      ws: true,
-      changeOrigin: true,
-      secure: false,
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://m-dev3.vrn.ru",
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: "localhost",
+      },
+      "/ws": {
+        target: "wss://m-dev3.vrn.ru",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+      "/verto": {
+        target: "wss://m-dev3.vrn.ru:8082",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (p: string) => p.replace(/^\/verto/, ""),
+      },
     },
   },
-},
+  preview: {
+    proxy: {
+      "/api": {
+        target: "https://m-dev3.vrn.ru",
+        changeOrigin: true,
+        secure: false,
+        cookieDomainRewrite: "localhost",
+      },
+      "/ws": {
+        target: "wss://m-dev3.vrn.ru",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+      "/verto": {
+        target: "wss://m-dev3.vrn.ru:8082",
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (p: string) => p.replace(/^\/verto/, ""),
+      },
+    },
+  },
 });

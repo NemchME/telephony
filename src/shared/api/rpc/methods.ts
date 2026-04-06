@@ -64,6 +64,11 @@ export const rpcMethods = {
     filter: { callGroupID, userID },
   }),
 
+  cmdResetUserState: (userID: string): RpcRequest => ({
+    method: 'Cmd.ResetUserState',
+    params: { userID },
+  }),
+
   callTransfer: (callId: string, destination: string): RpcRequest => ({
     method: 'Call.Transfer',
     filter: { id: callId },
@@ -74,5 +79,17 @@ export const rpcMethods = {
     method: 'Call.ConsultTransfer',
     filter: { id: callId },
     data: { destination },
+  }),
+
+  userUpdateSettings: (userId: string, settings: string): RpcRequest => ({
+    method: 'User.Update',
+    filter: { id: userId },
+    data: { settings },
+  }),
+
+  callGroupAgentUpdate: (callGroupID: string, userID: string, status: number): RpcRequest => ({
+    method: 'Config.CallGroupAgent.Update',
+    filter: { callGroupID, userID },
+    data: { status },
   }),
 } as const;

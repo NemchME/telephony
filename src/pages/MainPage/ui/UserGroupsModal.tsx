@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { useAppSelector } from '@/app/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectCallGroups, selectCallGroupAgents } from '@/entities/callGroup/model/callGroupSelectors';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
+import { useUpdateAgentStatusMutation } from '@/entities/callGroup/api/callGroupApi';
+import { callGroupActions } from '@/entities/callGroup/model/callGroupSlice';
 
 type Props = {
   onClose: () => void;
@@ -12,18 +14,25 @@ export function UserGroupsModal({ onClose }: Props) {
   const groups = useAppSelector(selectCallGroups);
   const agents = useAppSelector(selectCallGroupAgents);
   const myUserId = useAppSelector(selectUserId);
+  const dispatch = useAppDispatch();
+  const [updateAgentStatus] = useUpdateAgentStatusMutation();
 
-  const myGroupIds = new Set(
-    agents
-      .filter((a) => a.userID === myUserId)
-      .map((a) => a.callGroupID),
-  );
+  const myAgents = agents.filter((a) => a.userID === myUserId);
+  const myAgentMap = new Map(myAgents.map((a) => [a.callGroupID, a]));
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  const handleToggle = (groupId: string) => {
+    const agent = myAgentMap.get(groupId);
+    if (!agent) return;
+    const newStatus = agent.status === 1 ? 0 : 1;
+    updateAgentStatus({ callGroupID: groupId, userID: myUserId!, status: newStatus });
+    dispatch(callGroupActions.upsertCallGroupAgent({ ...agent, status: newStatus }));
+  };
 
   return (
     <div className="modal-overlay">
@@ -34,17 +43,17 @@ export function UserGroupsModal({ onClose }: Props) {
         </div>
         <div className="modal-dialog__body">
           <div className="user-groups-list">
-            {groups.map((g) => {
-              const isMember = myGroupIds.has(g.id);
+            {groups.filter((g) => myAgentMap.has(g.id)).map((g) => {
+              const agent = myAgentMap.get(g.id)!;
+              const isActive = agent.status === 1;
               return (
                 <label key={g.id} className="user-groups-item">
                   <input
                     type="checkbox"
-                    checked={isMember}
-                    disabled
-                    title="Управление членством недоступно из веб-клиента"
+                    checked={isActive}
+                    onChange={() => handleToggle(g.id)}
                   />
-                  <span className={`status-dot ${isMember ? 'status-dot--online' : 'status-dot--offline'}`} />
+                  <span className={`status-dot ${isActive ? 'status-dot--online' : 'status-dot--offline'}`} />
                   <span>{g.commonName ?? g.name}</span>
                   {g.numbers && g.numbers.length > 0 && (
                     <span className="badge">{g.numbers.join(', ')}</span>
@@ -53,9 +62,9 @@ export function UserGroupsModal({ onClose }: Props) {
               );
             })}
           </div>
-          <p className="user-groups-note">
-            Управление членством в группах осуществляется администратором.
-          </p>
+        </div>
+        <div className="modal-dialog__footer">
+          <button className="modal-dialog__close-btn" onClick={onClose}>ОК</button>
         </div>
       </div>
     </div>
