@@ -90,7 +90,7 @@ export function ActiveCallsTable() {
   };
 
   const calls: ActiveCall[] = [];
-  const vertoCallIdsInBundles = new Set<string>();
+  let hasAnyActiveBundleService = false;
 
   for (const id of bundles.ids) {
     const b = bundles.entities[id];
@@ -108,14 +108,10 @@ export function ActiveCallsTable() {
       if (svc.hangupTime) continue;
 
       hasActiveCalls = true;
+      hasAnyActiveBundleService = true;
       const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
       const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
       const isRinging = connState === 'ringing' || connState === 'early';
-
-      const svcCgpn = String(svc.cgpn ?? '');
-      if (myNumber && svcCgpn.includes(myNumber)) {
-        for (const vcId of vertoCallIds) vertoCallIdsInBundles.add(vcId);
-      }
 
       calls.push({
         id: svc.id,
@@ -137,13 +133,9 @@ export function ActiveCallsTable() {
         if (TERMINATED_STATES.has(connState)) continue;
         if (svc.hangupTime) continue;
 
+        hasAnyActiveBundleService = true;
         const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
         const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
-
-        const svcCgpn = String(svc.cgpn ?? '');
-        if (myNumber && svcCgpn.includes(myNumber)) {
-          for (const vcId of vertoCallIds) vertoCallIdsInBundles.add(vcId);
-        }
 
         calls.push({
           id: svc.id,
@@ -162,7 +154,7 @@ export function ActiveCallsTable() {
   }
 
   for (const vcId of vertoCallIds) {
-    if (vertoCallIdsInBundles.has(vcId)) continue;
+    if (hasAnyActiveBundleService) continue;
     const vc = vertoCallMap[vcId];
     if (!vc) continue;
     if (vc.state === 'hangup' || vc.state === 'destroy') continue;

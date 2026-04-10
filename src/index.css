@@ -701,11 +701,28 @@ a:hover {
   font-weight: 600;
 }
 
+.roster-table {
+  display: grid;
+  grid-template-columns:
+    18px
+    16px
+    minmax(100px, 1.4fr)
+    minmax(100px, 1.4fr)
+    minmax(60px, 80px)
+    minmax(80px, 110px)
+    max-content
+    minmax(58px, 75px)
+    max-content
+    max-content
+    auto;
+  gap: 0;
+}
 .user-list__agent {
   display: grid;
-  grid-template-columns: 18px 16px 160px 160px 110px 150px 70px 75px auto;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
-  gap: 0 4px;
+  column-gap: 4px;
   padding: 4px 8px 4px 8px;
   border-left: 1px solid var(--color-border-light);
   border-right: 1px solid var(--color-border-light);
@@ -714,6 +731,112 @@ a:hover {
   font-size: 11px;
   transition: background 0.1s;
   min-height: 26px;
+}
+.user-list__group {
+  grid-column: 1 / -1;
+}
+.roster-table--no-duration {
+  grid-template-columns:
+    18px
+    16px
+    minmax(120px, 1.6fr)
+    minmax(120px, 1.6fr)
+    minmax(70px, 90px)
+    minmax(90px, 120px)
+    minmax(58px, 75px)
+    auto;
+}
+@media (max-width: 1280px) {
+  .roster-table {
+    grid-template-columns:
+      18px
+      16px
+      minmax(90px, 1.3fr)
+      minmax(90px, 1.2fr)
+      minmax(56px, 72px)
+      minmax(72px, 96px)
+      max-content
+      minmax(54px, 68px)
+      max-content
+      max-content
+      auto;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .roster-table {
+    grid-template-columns:
+      18px
+      16px
+      minmax(80px, 1.2fr)
+      minmax(80px, 1.1fr)
+      minmax(52px, 68px)
+      minmax(68px, 90px)
+      max-content
+      minmax(52px, 64px)
+      max-content
+      auto;
+  }
+  .user-list__col--time--group {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .roster-table {
+    grid-template-columns:
+      18px
+      16px
+      minmax(72px, 1.2fr)
+      minmax(72px, 1.1fr)
+      minmax(48px, 64px)
+      minmax(60px, 82px)
+      max-content
+      minmax(52px, 64px)
+      auto;
+  }
+  .user-list__col--time--busy {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .roster-table {
+    grid-template-columns:
+      18px
+      16px
+      minmax(80px, 1.4fr)
+      minmax(72px, 1.1fr)
+      minmax(60px, 80px)
+      minmax(52px, 64px)
+      auto;
+  }
+  .user-list__col--time--avail,
+  .user-list__col--username {
+    display: none;
+  }
+}
+.user-list__agent--online {
+  background: #e6f6e6;
+}
+.user-list__agent--online:hover {
+  background: #d5efd5;
+}
+.user-list__agent--left-group {
+  background: #ececec;
+}
+.user-list__agent--left-group,
+.user-list__agent--left-group .user-list__agent-name,
+.user-list__agent--left-group .user-list__col--username,
+.user-list__agent--left-group .user-list__col--status,
+.user-list__agent--left-group .user-list__col--time,
+.user-list__agent--left-group .user-list__col--busy {
+  color: #000 !important;
+  font-weight: 600;
+}
+.user-list__agent--left-group .status-dot {
+  opacity: 0.5;
 }
 .user-list__col--numbers {
   display: flex;
@@ -733,6 +856,8 @@ a:hover {
 .user-list__col--time {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: visible;
 }
 .user-list__col--busy {
   white-space: nowrap;

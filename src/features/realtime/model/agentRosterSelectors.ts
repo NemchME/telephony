@@ -35,8 +35,10 @@ export type AgentRow = {
   agentStatus: string;
   lastModifiedStatus: number | undefined;
   lastModifiedUserState: number | undefined;
+  lastModifiedAvailStatus: number | undefined;
   presence: UiPresence;
   agentEnabled: boolean;
+  leftGroup: boolean;
 };
 
 export type RosterRow = GroupHeaderRow | AgentRow;
@@ -89,7 +91,6 @@ export const selectRoster = createSelector(
   (userEntities, userIds, userStates, groups, agents, agentStates, groupStates, groupOrder) => {
     const groupMap = new Map(groups.map((g) => [g.id, g]));
 
-    userIds = userIds;
     const orderedGroupIds = [...groupOrder];
     for (const g of groups) {
       if (!orderedGroupIds.includes(g.id)) orderedGroupIds.push(g.id);
@@ -107,7 +108,6 @@ export const selectRoster = createSelector(
 
     const agentsByGroup = new Map<string, string[]>();
     for (const a of agents) {
-      if (a.status === 0) continue;
       const arr = agentsByGroup.get(a.callGroupID) ?? [];
       arr.push(a.userID);
       agentsByGroup.set(a.callGroupID, arr);
@@ -137,12 +137,15 @@ export const selectRoster = createSelector(
       });
 
       const memberIds = agentsByGroup.get(g.id) ?? [];
+      const activeRows: AgentRow[] = [];
+      const leftRows: AgentRow[] = [];
       for (const uid of memberIds) {
         const user = userEntities[uid];
         if (!user) continue;
         const uState = userStates[uid];
         const agentCfg = agentMap.get(`${g.id}:${uid}`);
         const agentSt = agentStateMap.get(`${g.id}:${uid}`);
+        const leftGroup = agentCfg?.status === 0;
 
         const presence = calcPresence({
           networkStatus: uState?.networkStatus,
@@ -150,7 +153,7 @@ export const selectRoster = createSelector(
           availStatus: user.availStatus,
         });
 
-        rows.push({
+        const row: AgentRow = {
           kind: 'agent',
           userId: uid,
           groupId: g.id,
@@ -165,10 +168,17 @@ export const selectRoster = createSelector(
           agentStatus: agentSt?.status ?? '__undef__',
           lastModifiedStatus: agentSt?.lastModifiedStatus,
           lastModifiedUserState: uState?.lastModified,
+          lastModifiedAvailStatus: user.lastModifiedTime,
           presence,
           agentEnabled: agentCfg?.status === 1,
-        });
+          leftGroup,
+        };
+
+        if (leftGroup) leftRows.push(row);
+        else activeRows.push(row);
       }
+      for (const r of activeRows) rows.push(r);
+      for (const r of leftRows) rows.push(r);
     }
 
 

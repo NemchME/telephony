@@ -35,7 +35,7 @@ export function UsersPanel() {
       return !hiddenGroups.includes(row.groupId);
     }
     if (hiddenGroups.includes(row.groupId)) return false;
-    if (hideInactive && row.presence === 'OFFLINE') return false;
+    if (hideInactive && (row.presence === 'OFFLINE' || row.leftGroup)) return false;
     return true;
   });
 
@@ -127,7 +127,7 @@ export function UsersPanel() {
         </div>
       </div>
 
-      <div className="roster-table">
+      <div className={`roster-table ${showDuration ? '' : 'roster-table--no-duration'}`}>
         {filteredRoster.map((row) => {
           if (row.kind === 'group') {
             currentGroupDragIndex++;
@@ -244,6 +244,7 @@ function GroupRow({
 
 function AgentRowItem({
   row,
+  now,
   showDuration,
   onQuickDial,
   isAdminOrSupervisor,
@@ -255,8 +256,9 @@ function AgentRowItem({
   isAdminOrSupervisor: boolean;
 }) {
   const dotClass = presenceToDotClass(row.presence);
-  const statusTime = row.lastModifiedUserState ?? row.lastModifiedStatus;
-  const elapsed = statusTime ? elapsedSince(statusTime) : null;
+  const availElapsed = row.lastModifiedAvailStatus ? elapsedSince(row.lastModifiedAvailStatus) : null;
+  const busyElapsed = row.lastModifiedUserState ? elapsedSince(row.lastModifiedUserState) : null;
+  const groupElapsed = row.lastModifiedStatus ? elapsedSince(row.lastModifiedStatus) : null;
   const busyLabel = row.busyCount > 0 ? 'Разг.' : 'Не разг.';
   const [resetUserState] = useResetUserStateMutation();
 
@@ -280,7 +282,9 @@ function AgentRowItem({
   };
 
   return (
-    <div className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''}`}>
+    <div
+      className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''} ${row.leftGroup ? 'user-list__agent--left-group' : ''} ${!row.leftGroup && row.presence !== 'OFFLINE' && row.presence !== 'UNKNOWN' ? 'user-list__agent--online' : ''}`}
+    >
       <span className="user-list__col--icon">
         {isWebClientActive && <span className="web-client-icon" title="Веб-клиент активен">🌐</span>}
       </span>
@@ -312,10 +316,22 @@ function AgentRowItem({
         {row.username}
       </span>
       <span className="user-list__col--status badge">{statusLabel}</span>
-      <span className="user-list__col--time badge">
-        {showDuration && elapsed !== null ? formatElapsed(elapsed) : ''}
-      </span>
+      {showDuration && (
+        <span className="user-list__col--time user-list__col--time--avail badge" title="Время с изменения availStatus">
+          {availElapsed !== null ? formatElapsed(availElapsed) : ''}
+        </span>
+      )}
       <span className="user-list__col--busy badge">{busyLabel}</span>
+      {showDuration && (
+        <span className="user-list__col--time user-list__col--time--busy badge" title="Время с изменения busyStatus">
+          {busyElapsed !== null ? formatElapsed(busyElapsed) : ''}
+        </span>
+      )}
+      {showDuration && (
+        <span className="user-list__col--time user-list__col--time--group badge" title="Время с входа/выхода из группы">
+          {groupElapsed !== null ? formatElapsed(groupElapsed) : ''}
+        </span>
+      )}
       <span className="user-list__col--actions">
         {isAdminOrSupervisor && (
           <button

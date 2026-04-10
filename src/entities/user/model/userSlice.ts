@@ -12,6 +12,7 @@ export type User = {
   domainID?: string;
   maxCalls?: number;
   settings?: string;
+  lastModifiedTime?: number;
 };
 
 export type UserStateRecord = {
@@ -20,6 +21,7 @@ export type UserStateRecord = {
   networkStatus?: number;
   busyCount?: number;
   lastModified?: number;
+  lastModifiedAvailStatus?: number;
 };
 
 export type UserSliceState = {

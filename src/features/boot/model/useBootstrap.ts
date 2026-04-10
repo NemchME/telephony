@@ -42,6 +42,13 @@ export function useBootstrap() {
 
         if (cancelled) return;
 
+
+        const firstUs = userStatesRes?.elements?.[0] as Record<string, unknown> | undefined;
+        const cfg = firstUs?.['config'] as Record<string, unknown> | undefined;
+        console.log('[DEBUG] UserState.config sample:', cfg);
+        console.log('[DEBUG] UserState.config all keys:', cfg ? Object.keys(cfg) : []);
+        console.log('[DEBUG] UserState all keys:', firstUs ? Object.keys(firstUs) : []);
+
         dispatch(userActions.upsertMany(usersRes?.elements ?? []));
         dispatch(userActions.setUserStates(userStatesRes?.elements ?? []));
         dispatch(setCallGroups(groupsRes?.elements ?? []));

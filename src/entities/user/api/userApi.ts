@@ -12,6 +12,7 @@ export type User = {
   numbers?: string[];
   profiles?: string[];
   groupVision?: string[];
+  lastModifiedTime?: number;
 };
 
 export type UsersResponse = { elements: User[] };
@@ -22,6 +23,7 @@ export type UserState = {
   networkStatus?: number;
   busyCount?: number;
   lastModified?: number;
+  lastModifiedAvailStatus?: number;
 };
 
 export type UserStatesResponse = { elements: UserState[] };
