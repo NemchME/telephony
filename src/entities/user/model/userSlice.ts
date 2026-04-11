@@ -8,6 +8,7 @@ export type User = {
   availStatus?: string;
   busyStatus?: string;
   numbers?: string[];
+  manageTags?: string[];
   authorized?: number;
   domainID?: string;
   maxCalls?: number;
@@ -48,8 +49,9 @@ export const userSlice = createSlice({
     },
     upsertOne(state, action: PayloadAction<User>) {
       const u = action.payload;
-      if (!state.entities[u.id]) state.ids.push(u.id);
-      state.entities[u.id] = u;
+      const existing = state.entities[u.id];
+      if (!existing) state.ids.push(u.id);
+      state.entities[u.id] = existing ? { ...existing, ...u } : u;
     },
     setUserStates(state, action: PayloadAction<UserStateRecord[]>) {
       state.states = {};
@@ -61,7 +63,8 @@ export const userSlice = createSlice({
     upsertUserState(state, action: PayloadAction<UserStateRecord>) {
       const s = action.payload;
       const key = s.userID ?? s.id;
-      state.states[key] = s;
+      const existing = state.states[key];
+      state.states[key] = existing ? { ...existing, ...s } : s;
     },
     reset() {
       return initialState;

@@ -29,25 +29,19 @@ export function useBootstrap() {
 
     async function boot() {
       try {
+        const opts = { forceRefetch: true } as const;
         const [usersRes, userStatesRes, groupsRes, agentsRes, agentStatesRes, groupStatesRes, bundlesRes] =
           await Promise.all([
-            dispatch(userApi.endpoints.users.initiate(undefined)).unwrap(),
-            dispatch(userApi.endpoints.userStates.initiate(undefined)).unwrap(),
-            dispatch(callGroupApi.endpoints.getCallGroups.initiate(undefined)).unwrap(),
-            dispatch(callGroupApi.endpoints.getCallGroupAgents.initiate(undefined)).unwrap(),
-            dispatch(callGroupApi.endpoints.getCallGroupAgentStates.initiate(undefined)).unwrap(),
-            dispatch(callGroupApi.endpoints.getCallGroupStates.initiate(undefined)).unwrap(),
-            dispatch(bundleApi.endpoints.getBundleState.initiate(undefined)).unwrap(),
+            dispatch(userApi.endpoints.users.initiate(undefined, opts)).unwrap(),
+            dispatch(userApi.endpoints.userStates.initiate(undefined, opts)).unwrap(),
+            dispatch(callGroupApi.endpoints.getCallGroups.initiate(undefined, opts)).unwrap(),
+            dispatch(callGroupApi.endpoints.getCallGroupAgents.initiate(undefined, opts)).unwrap(),
+            dispatch(callGroupApi.endpoints.getCallGroupAgentStates.initiate(undefined, opts)).unwrap(),
+            dispatch(callGroupApi.endpoints.getCallGroupStates.initiate(undefined, opts)).unwrap(),
+            dispatch(bundleApi.endpoints.getBundleState.initiate(undefined, opts)).unwrap(),
           ]);
 
         if (cancelled) return;
-
-
-        const firstUs = userStatesRes?.elements?.[0] as Record<string, unknown> | undefined;
-        const cfg = firstUs?.['config'] as Record<string, unknown> | undefined;
-        console.log('[DEBUG] UserState.config sample:', cfg);
-        console.log('[DEBUG] UserState.config all keys:', cfg ? Object.keys(cfg) : []);
-        console.log('[DEBUG] UserState all keys:', firstUs ? Object.keys(firstUs) : []);
 
         dispatch(userActions.upsertMany(usersRes?.elements ?? []));
         dispatch(userActions.setUserStates(userStatesRes?.elements ?? []));

@@ -12,6 +12,7 @@ export type User = {
   numbers?: string[];
   profiles?: string[];
   groupVision?: string[];
+  manageTags?: string[];
   lastModifiedTime?: number;
 };
 

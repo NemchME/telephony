@@ -26,7 +26,12 @@ export function MainPage() {
 
   useEffect(() => {
     if (!userId) return;
-    const handler = () => sendBusyStatusReset(userId);
+    const handler = (e: BeforeUnloadEvent) => {
+      sendBusyStatusReset(userId);
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [userId]);

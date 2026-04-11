@@ -50,14 +50,17 @@ export const callGroupSlice = createSlice({
     upsertCallGroupAgent(s, a: PayloadAction<CallGroupAgent>) {
       const key = `${a.payload.callGroupID}:${a.payload.userID}`;
       const idx = s.agents.findIndex((x) => `${x.callGroupID}:${x.userID}` === key);
-      if (idx >= 0) s.agents[idx] = a.payload;
+      if (idx >= 0) s.agents[idx] = { ...s.agents[idx], ...a.payload };
       else s.agents.push(a.payload);
     },
     upsertCallGroupAgentState(s, a: PayloadAction<CallGroupAgentState>) {
       const key = `${a.payload.callGroupID}:${a.payload.userID}`;
       const idx = s.agentStates.findIndex((x) => `${x.callGroupID}:${x.userID}` === key);
-      if (idx >= 0) s.agentStates[idx] = a.payload;
+      if (idx >= 0) s.agentStates[idx] = { ...s.agentStates[idx], ...a.payload };
       else s.agentStates.push(a.payload);
+    },
+    reset() {
+      return initialState;
     },
   },
 });

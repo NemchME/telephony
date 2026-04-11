@@ -8,7 +8,7 @@ import { useTick } from '@/shared/lib/hooks/useTick';
 import { formatElapsed, elapsedSince } from '@/shared/lib/format/time';
 import { useResetUserStateMutation } from '@/entities/callGroup/api/callGroupApi';
 import { selectCallGroups } from '@/entities/callGroup/model/callGroupSelectors';
-import { selectUserAdminStatus } from '@/entities/session/model/sessionSelectors';
+import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import {
   viewSettingsActions,
   selectHideInactive,
@@ -27,8 +27,13 @@ export function UsersPanel() {
   const showDuration = useAppSelector(selectShowDuration);
   const hiddenGroups = useAppSelector(selectHiddenGroups);
   const allGroups = useAppSelector(selectCallGroups);
-  const adminStatus = useAppSelector(selectUserAdminStatus);
-  const isAdminOrSupervisor = adminStatus === 1 || adminStatus === 2;
+  const myUserId = useAppSelector(selectUserId);
+  const myManageTags = useAppSelector((s) =>
+    myUserId ? s.user.entities[myUserId]?.manageTags : undefined,
+  );
+  const isAdminOrSupervisor = !!myManageTags?.some(
+    (t) => t === 'admin' || t === 'administrator' || t === 'root' || t === 'supervisor',
+  );
 
   const filteredRoster = roster.filter((row) => {
     if (row.kind === 'group') {
@@ -278,6 +283,8 @@ function AgentRowItem({
   };
 
   const handleResetState = () => {
+    const ok = window.confirm(`Вы действительно хотите сбросить состояние пользователя «${row.displayName}»?`);
+    if (!ok) return;
     resetUserState({ userID: row.userId });
   };
 
@@ -339,7 +346,7 @@ function AgentRowItem({
             onClick={handleResetState}
             title="Сбросить состояние пользователя"
           >
-            ↻
+            🔄
           </button>
         )}
       </span>

@@ -131,6 +131,8 @@ export function Header() {
   }
 
   const handleLogout = async () => {
+    const ok = window.confirm('Вы действительно хотите выйти из системы?');
+    if (!ok) return;
     try {
       if (userId) {
         await updateStatus({ userId, availStatus: 'avail', busyStatus: '_' }).unwrap().catch(() => {});
@@ -548,7 +550,7 @@ export function Header() {
         >
           ⚙
         </button>
-        <button className="header__icon-btn" title="Выход" onClick={handleLogout}>✕</button>
+        <button className="header__icon-btn" title="Выход" onClick={handleLogout}>🚪</button>
       </div>
 
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}

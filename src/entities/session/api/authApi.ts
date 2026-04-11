@@ -2,6 +2,10 @@ import { apiSlice } from '@/app/store/api/apiSlice';
 import { rpcMethods } from '@/shared/api/rpc/methods';
 import { setSession, clearSession } from '@/entities/session/model/sessionSlice';
 import type { SessionUser } from '@/entities/session/model/sessionSlice';
+import { userActions } from '@/entities/user/model/userSlice';
+import { callGroupActions } from '@/entities/callGroup/model/callGroupSlice';
+import { bundleActions } from '@/entities/bundle/model/bundleSlice';
+import { cdrActions } from '@/entities/cdr/model/cdrSlice';
 
 export type LoginRequest = { login: string; password: string; useVerto?: boolean };
 
@@ -56,6 +60,11 @@ export const authApi = apiSlice.injectEndpoints({
         try {
           await queryFulfilled;
         } finally {
+          dispatch(userActions.reset());
+          dispatch(callGroupActions.reset());
+          dispatch(bundleActions.clear());
+          dispatch(cdrActions.reset());
+          dispatch(apiSlice.util.resetApiState());
           dispatch(clearSession());
         }
       },
