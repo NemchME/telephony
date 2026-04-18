@@ -42,7 +42,7 @@ export function CallQueueSidebar() {
             onDrop={onDrop(idx)}
             onDragEnd={onDragEnd}
           >
-            <span className={`status-dot ${dotClass}`} />
+            <img src="/icons/group.svg" alt="" className="group-icon" />
             <span className="sidebar__group-name">
               {g.commonName ?? g.name}
             </span>

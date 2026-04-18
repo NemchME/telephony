@@ -21,13 +21,24 @@ export const rpcBaseQuery =
     try {
       const finalBody: RpcBody =
         body.method === "Authentificate"
-          ? { ...body, requestPurpose: body.requestPurpose ?? "clientView" }
+          ? {
+              ...body,
+              data: {
+                ...(body.data as Record<string, unknown> | undefined),
+                requestPurpose:
+                  (body.data as { requestPurpose?: string } | undefined)
+                    ?.requestPurpose ?? "clientView",
+              },
+            }
           : body;
 
       const res = await fetch(env.API_URL, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
         body: JSON.stringify(finalBody),
       });
 
