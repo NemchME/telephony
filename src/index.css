@@ -705,7 +705,7 @@ a:hover {
   display: grid;
   grid-template-columns:
     18px
-    24px
+    32px
     minmax(100px, 1.4fr)
     minmax(100px, 1.4fr)
     minmax(60px, 80px)
@@ -738,7 +738,7 @@ a:hover {
 .roster-table--no-duration {
   grid-template-columns:
     18px
-    16px
+    32px
     minmax(120px, 1.6fr)
     minmax(120px, 1.6fr)
     minmax(70px, 90px)
@@ -750,7 +750,7 @@ a:hover {
   .roster-table {
     grid-template-columns:
       18px
-      16px
+      32px
       minmax(90px, 1.3fr)
       minmax(90px, 1.2fr)
       minmax(56px, 72px)
@@ -768,7 +768,7 @@ a:hover {
   .roster-table {
     grid-template-columns:
       18px
-      16px
+      32px
       minmax(80px, 1.2fr)
       minmax(80px, 1.1fr)
       minmax(52px, 68px)
@@ -787,7 +787,7 @@ a:hover {
   .roster-table {
     grid-template-columns:
       18px
-      16px
+      32px
       minmax(72px, 1.2fr)
       minmax(72px, 1.1fr)
       minmax(48px, 64px)
@@ -805,7 +805,7 @@ a:hover {
   .roster-table {
     grid-template-columns:
       18px
-      16px
+      32px
       minmax(80px, 1.4fr)
       minmax(72px, 1.1fr)
       minmax(60px, 80px)
