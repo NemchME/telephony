@@ -14,6 +14,7 @@ export type User = {
   groupVision?: string[];
   manageTags?: string[];
   lastModifiedTime?: number;
+  lastModifiedAvailStatus?: number;
 };
 
 export type UsersResponse = { elements: User[] };
@@ -25,6 +26,8 @@ export type UserState = {
   busyCount?: number;
   lastModified?: number;
   lastModifiedAvailStatus?: number;
+  lastModifiedBusyCount?: number;
+  lastModifiedNetworkStatus?: number;
 };
 
 export type UserStatesResponse = { elements: UserState[] };

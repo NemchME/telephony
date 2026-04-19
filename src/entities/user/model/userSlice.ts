@@ -14,6 +14,7 @@ export type User = {
   maxCalls?: number;
   settings?: string;
   lastModifiedTime?: number;
+  lastModifiedAvailStatus?: number;
 };
 
 export type UserStateRecord = {
@@ -23,6 +24,8 @@ export type UserStateRecord = {
   busyCount?: number;
   lastModified?: number;
   lastModifiedAvailStatus?: number;
+  lastModifiedBusyCount?: number;
+  lastModifiedNetworkStatus?: number;
 };
 
 export type UserSliceState = {
