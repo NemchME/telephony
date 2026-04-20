@@ -1,6 +1,6 @@
 
 
-const DEFAULT_STUN = 'stun:stun.l.google.com:19302';
+const DEFAULT_STUN = 'stun:94.141.32.110:3478';
 
 function getStunEnabled(): boolean {
   try {

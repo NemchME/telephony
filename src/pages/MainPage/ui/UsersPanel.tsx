@@ -215,7 +215,7 @@ function GroupRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <img src="/icons/group.svg" alt="" className="group-icon" />
+      <img src="./icons/group.svg" alt="" className="group-icon" />
       <strong
         className={row.numbers.length > 0 ? 'group-name--clickable' : ''}
         onClick={handleGroupNameClick}
