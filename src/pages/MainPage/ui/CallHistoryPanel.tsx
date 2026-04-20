@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useCdrSearchQuery, type CdrRow } from '@/entities/cdr/api/cdrApi';
 import { formatDateTime, formatElapsed } from '@/shared/lib/format/time';
+import { useAppSelector } from '@/app/store/hooks';
+import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { QuickDialDialog } from './QuickDialDialog';
 
 const LS_ROWS_KEY = 'cdr.rowsPerPage';
@@ -28,6 +30,7 @@ export function CallHistoryPanel() {
   const [rowsPerPage, setRowsPerPage] = useState(getRowsPerPage);
   const [offset, setOffset] = useState(0);
   const [quickDial, setQuickDial] = useState<{ number: string; name: string } | null>(null);
+  const currentUserId = useAppSelector(selectUserId);
 
   const filter = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
@@ -78,14 +81,34 @@ export function CallHistoryPanel() {
               const answeredMs = toMs(r.answeredTime);
               const hangupMs = toMs(r.hangupTime);
               const duration = answeredMs && hangupMs ? Math.floor((hangupMs - answeredMs) / 1000) : 0;
-              const isIncoming = r.cids === 'called' || r.cids === 'callee';
-              const callType = isIncoming ? 'Входящий' : 'Исходящий';
-              const number = isIncoming
-                ? (r.cgpn || r['caller.commonNumber'] || '')
-                : (r.cdpn || r['callee.commonNumber'] || '');
-              const name = isIncoming
-                ? (r['caller.commonName'] || '')
-                : (r['callee.commonName'] || '');
+              const callerUserId = (r['caller.userID'] as string | undefined) ?? '';
+              const calleeUserId = (r['callee.userID'] as string | undefined) ?? '';
+              const callerAuthorized = Boolean(r['caller.authorized']);
+              const calleeAuthorized = Boolean(r['callee.authorized']);
+
+
+              let isOutgoing = currentUserId != null && callerUserId === currentUserId;
+              let isIncoming = currentUserId != null && calleeUserId === currentUserId;
+
+              if (!isOutgoing && !isIncoming) {
+                if (callerAuthorized && !calleeAuthorized) isOutgoing = true;
+                else if (!callerAuthorized && calleeAuthorized) isIncoming = true;
+              }
+
+              const callType = isOutgoing
+                ? 'Исходящий'
+                : isIncoming
+                ? 'Входящий'
+                : callerAuthorized && calleeAuthorized
+                ? 'Внутренний'
+                : '—';
+
+              const number = isOutgoing
+                ? (r['callee.commonNumber'] as string | undefined) || r.cdpn || ''
+                : (r['caller.commonNumber'] as string | undefined) || r.cgpn || '';
+              const name = isOutgoing
+                ? (r['callee.commonName'] as string | undefined) || ''
+                : (r['caller.commonName'] as string | undefined) || '';
 
               return (
                 <tr key={r.id ?? i}>
