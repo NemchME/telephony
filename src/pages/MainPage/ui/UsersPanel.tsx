@@ -290,7 +290,7 @@ function AgentRowItem({
 
   return (
     <div
-      className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''} ${row.leftGroup ? 'user-list__agent--left-group' : ''} ${!row.leftGroup && row.presence !== 'OFFLINE' && row.presence !== 'UNKNOWN' ? 'user-list__agent--online' : ''}`}
+      className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''} ${row.leftGroup ? 'user-list__agent--left-group' : ''} ${row.presence === "ONLINE_DIRECT"? 'user-list__agent--direct' : !row.leftGroup && row.presence !== 'OFFLINE' && row.presence !== 'UNKNOWN' ? 'user-list__agent--online' : ''}`}
     >
       <span className="user-list__col--icon">
         {isWebClientActive && <span className="web-client-icon" title="Веб-клиент активен">🌐</span>}

@@ -6,7 +6,7 @@ import { useUpdateMyAvailStatusMutation } from '@/entities/user/api/userApi';
 
 const STATUSES = [
   { value: 'avail_avail', dot: 'online', label: 'Нормальное' },
-  { value: 'direct_direct', dot: 'online', label: 'Только прямые вызовы' },
+  { value: 'direct_direct', dot: 'direct', label: 'Только прямые вызовы' },
   { value: 'dnd_dnd', dot: 'dnd', label: 'Не беспокоить' },
   { value: 'away_away', dot: 'away', label: 'Отошёл' },
 ] as const;
@@ -45,6 +45,7 @@ export function statusToDotClass(compound: string): string {
   const { avail } = parseCompoundStatus(compound);
   if (avail === 'dnd') return 'status-dot--dnd';
   if (avail === 'away') return 'status-dot--away';
+  if (avail === 'direct') return 'status-dot--direct';
   return 'status-dot--online';
 }
 

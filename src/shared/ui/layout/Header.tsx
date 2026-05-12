@@ -387,11 +387,11 @@ export function Header() {
         <StatusDropdown />
         <div className="header__spacer" />
 
-        {useVerto && (
+        {/* {useVerto && (
           <span className="header__verto-status" title={`Verto: ${vertoState}`}>
             {vertoStatusIcon}
           </span>
-        )}
+        )} */}
 
         {!useVerto ? (
           <span className={`header__device-msg ${myNetworkStatus === 1 ? 'header__device-msg--online' : 'header__device-msg--offline'}`}>

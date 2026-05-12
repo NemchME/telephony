@@ -34,6 +34,7 @@
   --color-link: #2c73d2;
 
   --color-online: #27ae60;
+  --color-direct: #8000ff;
   --color-busy: #e67e22;
   --color-dnd: #e74c3c;
   --color-away: #95a5a6;
@@ -138,6 +139,7 @@ a:hover {
 .status-dot--busy    { background: var(--color-busy); }
 .status-dot--dnd     { background: var(--color-dnd); }
 .status-dot--away    { background: var(--color-away); }
+.status-dot--direct    { background: var(--color-direct); }
 .status-dot--offline { background: var(--color-offline); }
 
 .badge {
@@ -820,6 +822,15 @@ a:hover {
 .user-list__agent--online {
   background: #e6f6e6;
 }
+
+.user-list__agent--direct {
+  background: #caabde;
+}
+
+.user-list__agent--direct:hover {
+  background: #9a52c9;
+}
+
 .user-list__agent--online:hover {
   background: #d5efd5;
 }
@@ -862,9 +873,7 @@ a:hover {
 .user-list__col--busy {
   white-space: nowrap;
 }
-.user-list__agent:hover {
-  background: var(--bg-row-hover);
-}
+
 .user-list__agent--selected {
   background: var(--bg-agent-row);
   border-left-color: var(--color-busy);
@@ -1422,4 +1431,8 @@ a:hover {
   font-size: 11px;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.user-list__agent--direct:hover .user-list__agent-name--clickable:hover {
+  color: white;
 }

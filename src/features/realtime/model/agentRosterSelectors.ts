@@ -68,7 +68,7 @@ function presenceToDotClass(p: UiPresence): string {
   switch (p) {
     case 'OFFLINE': return 'status-dot--offline';
     case 'ONLINE_AVAILABLE': return 'status-dot--online';
-    case 'ONLINE_DIRECT': return 'status-dot--online';
+    case 'ONLINE_DIRECT': return 'status-dot--direct';
     case 'ONLINE_DND': return 'status-dot--dnd';
     case 'ONLINE_AWAY': return 'status-dot--away';
     case 'ONLINE_BUSY': return 'status-dot--busy';
