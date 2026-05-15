@@ -97,11 +97,8 @@ export function CallHistoryPanel() {
 
               const callType = isOutgoing
                 ? 'Исходящий'
-                : isIncoming
-                ? 'Входящий'
-                : callerAuthorized && calleeAuthorized
-                ? 'Внутренний'
-                : '—';
+                : duration === 0 ?
+                'Пропущенный' : 'Входящий';
 
               const number = isOutgoing
                 ? (r['callee.commonNumber'] as string | undefined) || r.cdpn || ''

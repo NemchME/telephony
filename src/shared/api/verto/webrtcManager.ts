@@ -57,9 +57,6 @@ export async function createOutboundSession(callID: string): Promise<{ session: 
     pc.addTrack(track, localStream);
   }
   pc.ontrack = (e) => {
-    if (import.meta.env.DEV) {
-      console.log('[WebRTC] ontrack', e.track.kind, e.streams.length, 'streams');
-    }
     for (const stream of e.streams) {
       for (const track of stream.getTracks()) {
         remoteStream.addTrack(track);
@@ -96,9 +93,6 @@ export async function createInboundSession(callID: string, remoteSdp: string): P
   }
 
   pc.ontrack = (e) => {
-    if (import.meta.env.DEV) {
-      console.log('[WebRTC] ontrack', e.track.kind, e.streams.length, 'streams');
-    }
     for (const stream of e.streams) {
       for (const track of stream.getTracks()) {
         remoteStream.addTrack(track);

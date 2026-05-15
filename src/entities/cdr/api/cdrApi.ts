@@ -9,6 +9,7 @@ export type CdrRow = {
   cdpn?: string;
   cids?: string;
   type?: string;
+  duration?: number;
   connState?: string;
   'caller.commonName'?: string;
   'caller.commonNumber'?: string;

@@ -126,10 +126,6 @@ export function Header() {
     return null;
   })();
 
-  if (import.meta.env.DEV && hasActiveCall) {
-    console.log('[Header] activeServiceId:', activeServiceId, 'bundles:', bundles.ids.length);
-  }
-
   const handleLogout = async () => {
     const ok = window.confirm('Вы действительно хотите выйти из системы?');
     if (!ok) return;
@@ -273,7 +269,6 @@ export function Header() {
   const handleBlindTransfer = useCallback(async () => {
     const dest = resolveToNumber(transferInput);
     if (!dest || !activeCallID) return;
-    console.log('[Transfer] blind transfer destination:', dest, 'callID:', activeCallID);
     try {
       await vertoClient.blindTransfer(dest, activeCallID);
     } catch (err) {
@@ -285,7 +280,6 @@ export function Header() {
   const handleAttendedTransfer = useCallback(async () => {
     const dest = resolveToNumber(transferInput);
     if (!dest || !activeCallID) return;
-    console.log('[Transfer] attended transfer destination:', dest, 'callID:', activeCallID);
     try {
       await vertoClient.attendedTransfer(dest, activeCallID);
       setIsConsulting(true);

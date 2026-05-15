@@ -69,10 +69,6 @@ export function ActiveCallsTable() {
       hangupCall({ callId: call.id });
     }
 
-    if (import.meta.env.DEV) {
-      console.log('[Hangup] serviceId:', call.id, 'bundleId:', call.bundleId);
-    }
-
     if (call.bundleId) {
       dispatch(bundleActions.removeBundle(call.bundleId));
     }

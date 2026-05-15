@@ -108,7 +108,6 @@ export const vertoMiddleware: Middleware = (store) => (next) => (action) => {
       }
     } else {
       store.dispatch(vertoActions.setConnectionState('disconnected'));
-      if (import.meta.env.DEV) console.log('[Verto] Skipped — user chose another device');
     }
   }
 
@@ -134,7 +133,6 @@ async function connectVerto(
   vertoClient.setHandlers({
     onReady: () => {
       store.dispatch(vertoActions.setConnectionState('connected'));
-      if (import.meta.env.DEV) console.log('[Verto] Connected and ready');
     },
 
     onDisconnect: () => {
