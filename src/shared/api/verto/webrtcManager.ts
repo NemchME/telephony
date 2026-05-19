@@ -1,4 +1,4 @@
-
+import { applySinkId, getInputDeviceId } from '@/shared/lib/audio/audioDevices';
 
 const DEFAULT_STUN = 'stun:94.141.32.110:3478';
 
@@ -34,18 +34,36 @@ function createRemoteAudioElement(): HTMLAudioElement {
   audio.autoplay = true;
   audio.style.display = 'none';
   document.body.appendChild(audio);
+  applySinkId(audio);
   return audio;
 }
 
 export async function acquireMedia(): Promise<MediaStream> {
-  return navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    },
-    video: false,
-  });
+  const inputId = getInputDeviceId();
+  const audioConstraints: MediaTrackConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  };
+  if (inputId) {
+    audioConstraints.deviceId = { exact: inputId };
+  }
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: false });
+  } catch (err) {
+    // Fallback if exact deviceId fails
+    if (inputId) {
+      return navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        video: false,
+      });
+    }
+    throw err;
+  }
 }
 export async function createOutboundSession(callID: string): Promise<{ session: WebRtcCallSession; offerSdp: string }> {
   const localStream = await acquireMedia();
@@ -57,6 +75,9 @@ export async function createOutboundSession(callID: string): Promise<{ session: 
     pc.addTrack(track, localStream);
   }
   pc.ontrack = (e) => {
+    if (import.meta.env.DEV) {
+      console.log('[WebRTC] ontrack', e.track.kind, e.streams.length, 'streams');
+    }
     for (const stream of e.streams) {
       for (const track of stream.getTracks()) {
         remoteStream.addTrack(track);
@@ -93,6 +114,9 @@ export async function createInboundSession(callID: string, remoteSdp: string): P
   }
 
   pc.ontrack = (e) => {
+    if (import.meta.env.DEV) {
+      console.log('[WebRTC] ontrack', e.track.kind, e.streams.length, 'streams');
+    }
     for (const stream of e.streams) {
       for (const track of stream.getTracks()) {
         remoteStream.addTrack(track);

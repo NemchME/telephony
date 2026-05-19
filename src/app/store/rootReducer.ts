@@ -10,6 +10,8 @@ import { cdrReducer } from '@/entities/cdr/model/cdrSlice';
 import { groupOrderReducer } from '@/features/realtime/model/groupOrderSlice';
 import { viewSettingsReducer } from '@/features/realtime/model/viewSettingsSlice';
 import { vertoReducer } from '@/entities/call/model/vertoSlice';
+import { missedCallsReducer } from '@/entities/missedCalls/model/missedCallsSlice';
+import { crmReducer } from '@/entities/crm/model/crmSlice';
 
 export const rootReducer = combineReducers({
   [apiSlice.reducerPath]: apiSlice.reducer,
@@ -20,6 +22,8 @@ export const rootReducer = combineReducers({
   bundle: bundleReducer,
   cdr: cdrReducer,
   verto: vertoReducer,
+  missedCalls: missedCallsReducer,
+  crm: crmReducer,
 
   groupOrder: groupOrderReducer,
   viewSettings: viewSettingsReducer,

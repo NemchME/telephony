@@ -13,10 +13,16 @@ import {
 } from '@/entities/callGroup/model/callGroupSlice';
 import { bundleActions } from '@/entities/bundle/model/bundleSlice';
 import { groupOrderActions } from '@/features/realtime/model/groupOrderSlice';
+import { loadCrmTemplates } from '@/shared/api/crm/loadCrmTemplates';
+import { crmActions, setCrmTemplates } from '@/entities/crm/model/crmSlice';
+import { selectUserId } from '@/entities/session/model/sessionSelectors';
+import { selectUserEntities } from '@/entities/user/model/userSelectors';
 
 export function useBootstrap() {
   const dispatch = useAppDispatch();
   const isAuthed = useAppSelector(selectIsAuthed);
+  const userId = useAppSelector(selectUserId);
+  const userEntities = useAppSelector(selectUserEntities);
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
@@ -54,6 +60,25 @@ export function useBootstrap() {
         dispatch(bundleActions.setAll(bundles));
 
         dispatch(groupOrderActions.ensureContains((groupsRes?.elements ?? []).map((g: { id: string }) => g.id)));
+
+        // Load CRM templates (best-effort; doesn't block boot)
+        loadCrmTemplates()
+          .then((templates) => {
+            if (cancelled) return;
+            setCrmTemplates(templates);
+            const me = userId ? userEntities[userId] : undefined;
+            const userCrms = me?.crms;
+            const allowedIds = Array.isArray(userCrms)
+              ? userCrms.map((x) => String(x))
+              : Object.keys(templates);
+            const available = allowedIds
+              .filter((id) => templates[id])
+              .map((id) => ({ id, name: templates[id]!.name }));
+            dispatch(crmActions.setAvailable(available));
+          })
+          .catch((err) => {
+            if (import.meta.env.DEV) console.warn('[CRM] load failed:', err);
+          });
 
         setBooted(true);
       } catch (err) {

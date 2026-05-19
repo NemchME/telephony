@@ -279,6 +279,10 @@ function AgentRowItem({
     const num = row.numbers[0];
     if (num) {
       onQuickDial({ number: num, name: row.displayName });
+      return;
+    }
+    if (row.username) {
+      onQuickDial({ number: row.username, name: row.displayName });
     }
   };
 
@@ -299,7 +303,13 @@ function AgentRowItem({
       <span
         className="user-list__agent-name user-list__agent-name--clickable"
         onClick={handleUsernameClick}
-        title={row.numbers[0] ? `Позвонить ${row.displayName}` : undefined}
+        title={
+          row.numbers[0]
+            ? `Позвонить ${row.displayName}`
+            : row.username
+            ? `Позвонить ${row.displayName} (${row.username})`
+            : undefined
+        }
       >
         {row.displayName}
       </span>

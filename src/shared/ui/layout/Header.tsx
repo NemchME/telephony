@@ -126,6 +126,10 @@ export function Header() {
     return null;
   })();
 
+  if (import.meta.env.DEV && hasActiveCall) {
+    console.log('[Header] activeServiceId:', activeServiceId, 'bundles:', bundles.ids.length);
+  }
+
   const handleLogout = async () => {
     const ok = window.confirm('Вы действительно хотите выйти из системы?');
     if (!ok) return;
@@ -152,14 +156,16 @@ export function Header() {
         if (num) return num;
       }
     }
-    // Then users
+    // Then users — prefer number, fall back to login (name)
     for (const uid of allUsers.ids) {
       const u = allUsers.entities[uid];
       if (!u) continue;
-      const name = (u.commonName ?? u.name ?? '').toLowerCase();
-      if (name === lower || name.includes(lower)) {
+      const cname = (u.commonName ?? '').toLowerCase();
+      const uname = (u.name ?? '').toLowerCase();
+      if (cname === lower || cname.includes(lower) || uname === lower || uname.includes(lower)) {
         const num = u.numbers?.[0];
         if (num) return num;
+        if (u.name) return u.name; // login fallback
       }
     }
     return q;
@@ -269,6 +275,7 @@ export function Header() {
   const handleBlindTransfer = useCallback(async () => {
     const dest = resolveToNumber(transferInput);
     if (!dest || !activeCallID) return;
+    console.log('[Transfer] blind transfer destination:', dest, 'callID:', activeCallID);
     try {
       await vertoClient.blindTransfer(dest, activeCallID);
     } catch (err) {
@@ -280,6 +287,7 @@ export function Header() {
   const handleAttendedTransfer = useCallback(async () => {
     const dest = resolveToNumber(transferInput);
     if (!dest || !activeCallID) return;
+    console.log('[Transfer] attended transfer destination:', dest, 'callID:', activeCallID);
     try {
       await vertoClient.attendedTransfer(dest, activeCallID);
       setIsConsulting(true);

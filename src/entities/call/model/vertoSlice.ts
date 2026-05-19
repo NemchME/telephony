@@ -15,6 +15,10 @@ export type VertoCallRecord = {
   displayName?: string;
   displayNumber?: string;
   remoteSdp?: string;
+  redirgName?: string;
+  redirgNumber?: string;
+  xferorName?: string;
+  xferorNumber?: string;
 };
 
 export type VertoConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -60,6 +64,24 @@ export const vertoSlice = createSlice({
         c.displayName = action.payload.displayName;
         c.displayNumber = action.payload.displayNumber;
       }
+    },
+    updateCallRedirect(
+      state,
+      action: PayloadAction<{
+        callID: string;
+        redirgName?: string;
+        redirgNumber?: string;
+        xferorName?: string;
+        xferorNumber?: string;
+      }>,
+    ) {
+      const c = state.calls[action.payload.callID];
+      if (!c) return;
+      const p = action.payload;
+      if (p.redirgName !== undefined) c.redirgName = p.redirgName;
+      if (p.redirgNumber !== undefined) c.redirgNumber = p.redirgNumber;
+      if (p.xferorName !== undefined) c.xferorName = p.xferorName;
+      if (p.xferorNumber !== undefined) c.xferorNumber = p.xferorNumber;
     },
     removeCall(state, action: PayloadAction<string>) {
       delete state.calls[action.payload];

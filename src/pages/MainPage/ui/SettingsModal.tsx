@@ -3,13 +3,23 @@ import { useAppSelector } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { useUpdateUserSettingsMutation } from '@/entities/user/api/userApi';
 import { selectUserEntities } from '@/entities/user/model/userSelectors';
+import {
+  getInputDeviceId,
+  setInputDeviceId,
+  getOutputDeviceId,
+  setOutputDeviceId,
+  listAudioDevices,
+  primeDeviceLabels,
+  applySinkId,
+  supportsSinkId,
+} from '@/shared/lib/audio/audioDevices';
 
-const RINGTONES = [
-  'Asterisk_ring1', 'Asterisk_ring2', 'Asterisk_ring3', 'Asterisk_ring4',
-  'Asterisk_ring5', 'Asterisk_ring6', 'Asterisk_ring7', 'Asterisk_ring8',
-  'Asterisk_ring9', 'Asterisk_ring10', 'Asterisk_ring11', 'Asterisk_ring12',
-  'Asterisk_ring13', 'Asterisk_ring14', 'Asterisk_ring15', 'Asterisk_ring16',
-];
+const RINGTONES = ['apple_ring', 'bell_ring'] as const;
+
+const RINGTONE_LABEL: Record<string, string> = {
+  apple_ring: 'apple_ring',
+  bell_ring: 'bell_ring',
+};
 
 const LS_STUN = 'settings.useStun';
 
@@ -38,7 +48,7 @@ export function getSettings(userSettingsJson: string | undefined | null): {
 } {
   const s = parseServerSettings(userSettingsJson);
   return {
-    ringtone: s.ringtone ?? 'Asterisk_ring1',
+    ringtone: s.ringtone ?? 'apple_ring',
     endCallSound: s.endCallSound ?? true,
     useStun: loadStun(),
   };
@@ -57,15 +67,35 @@ export function SettingsModal({ onClose }: Props) {
   const serverSettings = parseServerSettings(user?.settings);
   const [updateSettings] = useUpdateUserSettingsMutation();
 
-  const [ringtone, setRingtone] = useState(serverSettings.ringtone ?? 'Asterisk_ring1');
+  const initialRingtone = serverSettings.ringtone && (RINGTONES as readonly string[]).includes(serverSettings.ringtone)
+    ? serverSettings.ringtone
+    : 'apple_ring';
+  const [ringtone, setRingtone] = useState(initialRingtone);
   const [endCallSound, setEndCallSound] = useState(serverSettings.endCallSound ?? true);
   const [useStun, setUseStun] = useState(loadStun);
+
+  const [inputs, setInputs] = useState<MediaDeviceInfo[]>([]);
+  const [outputs, setOutputs] = useState<MediaDeviceInfo[]>([]);
+  const [inputId, setInputIdState] = useState<string>(getInputDeviceId() ?? '');
+  const [outputId, setOutputIdState] = useState<string>(getOutputDeviceId() ?? '');
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await primeDeviceLabels();
+      const list = await listAudioDevices();
+      if (cancelled) return;
+      setInputs(list.inputs);
+      setOutputs(list.outputs);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const saveToServer = (newRingtone: string, newEndCallSound: boolean) => {
     if (!userId) return;
@@ -85,6 +115,7 @@ export function SettingsModal({ onClose }: Props) {
     }
     const audio = new Audio(`/sounds/${name}.mp3`);
     audioRef.current = audio;
+    applySinkId(audio);
     audio.play().catch(() => {});
   };
 
@@ -96,6 +127,23 @@ export function SettingsModal({ onClose }: Props) {
   const handleUseStunChange = (v: boolean) => {
     setUseStun(v);
     try { localStorage.setItem(LS_STUN, String(v)); } catch {}
+  };
+
+  const handleInputChange = (id: string) => {
+    setInputIdState(id);
+    setInputDeviceId(id || null);
+  };
+
+  const handleOutputChange = (id: string) => {
+    setOutputIdState(id);
+    setOutputDeviceId(id || null);
+  };
+
+  const handleTestOutput = () => {
+    const audio = new Audio('/sounds/end_call.mp3');
+    audio.volume = 0.5;
+    applySinkId(audio);
+    audio.play().catch(() => {});
   };
 
   return (
@@ -118,7 +166,7 @@ export function SettingsModal({ onClose }: Props) {
                     checked={ringtone === r}
                     onChange={() => handleRingtoneChange(r)}
                   />
-                  <span className="settings-ringtone-name">{r.replace('Asterisk_', '').replace('ring', 'Мелодия ')}</span>
+                  <span className="settings-ringtone-name">{RINGTONE_LABEL[r] ?? r}</span>
                   <button
                     className="settings-ringtone-play"
                     onClick={(e) => { e.preventDefault(); handlePlayRingtone(r); }}
@@ -140,6 +188,51 @@ export function SettingsModal({ onClose }: Props) {
               />
               Звук завершения вызова
             </label>
+          </div>
+
+          <div className="settings-section">
+            <div className="settings-section__title">Аудио-устройства</div>
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', marginBottom: 4 }}>Микрофон</label>
+              <select
+                value={inputId}
+                onChange={(e) => handleInputChange(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">По умолчанию</option>
+                {inputs.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Микрофон (${d.deviceId.slice(0, 6)})`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4 }}>
+                Устройство вывода (звонок, рингтон)
+                {!supportsSinkId() && <span style={{ color: '#e74c3c', fontSize: 11 }}> — не поддерживается браузером</span>}
+              </label>
+              <select
+                value={outputId}
+                onChange={(e) => handleOutputChange(e.target.value)}
+                style={{ width: '100%' }}
+                disabled={!supportsSinkId()}
+              >
+                <option value="">По умолчанию</option>
+                {outputs.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label || `Динамик (${d.deviceId.slice(0, 6)})`}
+                  </option>
+                ))}
+              </select>
+              <button
+                style={{ marginTop: 6 }}
+                onClick={handleTestOutput}
+                disabled={!supportsSinkId()}
+              >
+                Тест
+              </button>
+            </div>
           </div>
 
           <div className="settings-section">

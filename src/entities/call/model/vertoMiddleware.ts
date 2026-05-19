@@ -14,44 +14,58 @@ import type { RootState } from '@/app/store/rootReducer';
 import { bundleActions, type BundleService } from '@/entities/bundle/model/bundleSlice';
 import { callApi } from '@/entities/call/api/callApi';
 import { env } from '@/app/config/env';
+import { applySinkId } from '@/shared/lib/audio/audioDevices';
+import {
+  showIncomingCallNotification,
+  showMissedCallNotification,
+  closeIncomingNotification,
+  hasActiveIncoming,
+  onServiceWorkerAction,
+} from '@/shared/lib/notifications/notifications';
 
-let ringtoneCtx: AudioContext | null = null;
-let ringtoneInterval: ReturnType<typeof setInterval> | null = null;
+const ALLOWED_RINGTONES = ['apple_ring', 'bell_ring'] as const;
+type Ringtone = typeof ALLOWED_RINGTONES[number];
 
-function startRingtone() {
+function readRingtoneFromSettings(getState: () => RootState): Ringtone {
+  try {
+    const state = getState();
+    const myId = state.session.userId;
+    if (!myId) return 'apple_ring';
+    const u = state.user.entities[myId];
+    const raw = u?.settings;
+    if (typeof raw === 'string' && raw) {
+      const parsed = JSON.parse(raw) as { ringtone?: string };
+      const r = parsed.ringtone;
+      if (r && (ALLOWED_RINGTONES as readonly string[]).includes(r)) {
+        return r as Ringtone;
+      }
+    }
+  } catch { /* ignore */ }
+  return 'apple_ring';
+}
+
+let ringtoneAudio: HTMLAudioElement | null = null;
+
+function startRingtone(getState: () => RootState) {
   stopRingtone();
   try {
-    ringtoneCtx = new AudioContext();
-    function playRingBurst() {
-      if (!ringtoneCtx) return; 
-      const now = ringtoneCtx.currentTime;
-      const osc1 = ringtoneCtx.createOscillator();
-      const osc2 = ringtoneCtx.createOscillator();
-      const gain = ringtoneCtx.createGain();
-      osc1.frequency.value = 440;
-      osc2.frequency.value = 480;
-      gain.gain.value = 0.15;
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(ringtoneCtx.destination);
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 1);
-      osc2.stop(now + 1);
-    }
-    playRingBurst();
-    ringtoneInterval = setInterval(playRingBurst, 3000);
+    const ringtone = readRingtoneFromSettings(getState);
+    const audio = new Audio(`/sounds/${ringtone}.mp3`);
+    audio.loop = true;
+    audio.volume = 0.8;
+    applySinkId(audio);
+    audio.play().catch(() => { /* autoplay policy */ });
+    ringtoneAudio = audio;
   } catch { /* ignore */ }
 }
 
 export function stopRingtone() {
-  if (ringtoneInterval) {
-    clearInterval(ringtoneInterval);
-    ringtoneInterval = null;
-  }
-  if (ringtoneCtx) {
-    ringtoneCtx.close().catch(() => {});
-    ringtoneCtx = null;
+  if (ringtoneAudio) {
+    try {
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+    } catch { /* ignore */ }
+    ringtoneAudio = null;
   }
 }
 
@@ -59,17 +73,10 @@ function playEndSound() {
   try {
     const enabled = localStorage.getItem('settings.endCallSound') !== 'false';
     if (!enabled) return;
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 480;
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
-    setTimeout(() => ctx.close().catch(() => {}), 1000);
+    const audio = new Audio('/sounds/end_call.mp3');
+    audio.volume = 0.6;
+    applySinkId(audio);
+    audio.play().catch(() => { /* ignore */ });
   } catch { /* ignore */ }
 }
 
@@ -93,6 +100,8 @@ function hangupAllBundles(store: StoreApi) {
   }
 }
 
+let swUnsubscribe: (() => void) | null = null;
+
 export const vertoMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
   const s = store as unknown as StoreApi;
@@ -108,11 +117,31 @@ export const vertoMiddleware: Middleware = (store) => (next) => (action) => {
       }
     } else {
       store.dispatch(vertoActions.setConnectionState('disconnected'));
+      if (import.meta.env.DEV) console.log('[Verto] Skipped — user chose another device');
+    }
+
+    if (!swUnsubscribe) {
+      swUnsubscribe = onServiceWorkerAction((msg) => {
+        if (!msg.callID) return;
+        const useVerto = s.getState().session.useVerto;
+        if (!useVerto) return; // нет кнопок в этом режиме
+        const call = s.getState().verto.calls[msg.callID];
+        if (!call || call.direction !== 'inbound') return;
+        if (msg.action === 'accept' && call.remoteSdp) {
+          void answerInboundCall(msg.callID, call.remoteSdp, s.dispatch);
+        } else if (msg.action === 'reject') {
+          void rejectInboundCall(msg.callID, s.dispatch, s.getState);
+        }
+      });
     }
   }
 
   if (clearSession.match(action)) {
     disconnectVerto(s);
+    if (swUnsubscribe) {
+      swUnsubscribe();
+      swUnsubscribe = null;
+    }
   }
 
   return result;
@@ -133,6 +162,7 @@ async function connectVerto(
   vertoClient.setHandlers({
     onReady: () => {
       store.dispatch(vertoActions.setConnectionState('connected'));
+      if (import.meta.env.DEV) console.log('[Verto] Connected and ready');
     },
 
     onDisconnect: () => {
@@ -154,20 +184,38 @@ async function connectVerto(
       }));
 
       if (call.direction === 'inbound' && call.remoteSdp) {
-        startRingtone();
+        startRingtone(store.getState);
+        const canAnswer = store.getState().session.useVerto === true;
+        void showIncomingCallNotification({
+          callID: call.callID,
+          name: call.callerIdName,
+          number: call.callerIdNumber,
+          canAnswer,
+        });
       }
     },
 
     onCallState: (callID: string, callState, _params) => {
+      const prev = store.getState().verto.calls[callID];
+      const wasInboundUnanswered = prev?.direction === 'inbound' && !prev?.answeredAt;
       store.dispatch(vertoActions.updateCallState({ callID, state: callState }));
 
       if (callState === 'active') {
         stopRingtone();
+        closeIncomingNotification(callID);
       }
 
       if (callState === 'hangup' || callState === 'destroy') {
         stopRingtone();
         playEndSound();
+        if (wasInboundUnanswered && hasActiveIncoming(callID)) {
+          void showMissedCallNotification({
+            callID,
+            name: prev?.callerIdName ?? '',
+            number: prev?.callerIdNumber ?? '',
+          });
+        }
+        closeIncomingNotification(callID);
         destroySession(callID);
         hangupAllBundles(store);
         setTimeout(() => {
@@ -191,6 +239,10 @@ async function connectVerto(
 
     onCallDisplay: (callID: string, displayName: string, displayNumber: string) => {
       store.dispatch(vertoActions.updateCallDisplay({ callID, displayName, displayNumber }));
+    },
+
+    onCallRedirect: (callID, info) => {
+      store.dispatch(vertoActions.updateCallRedirect({ callID, ...info }));
     },
   });
 

@@ -1097,6 +1097,34 @@ a:hover {
   text-decoration: underline;
 }
 
+.cdr-type--missed {
+  color: var(--color-dnd, #e74c3c);
+  font-weight: 600;
+}
+.cdr-type--no-answer {
+  color: var(--color-text-light, #777);
+  font-style: italic;
+}
+
+.tab {
+  position: relative;
+}
+.tab-badge {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--color-dnd, #e74c3c);
+  color: #fff;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
 .pagination {
   display: flex;
   align-items: center;

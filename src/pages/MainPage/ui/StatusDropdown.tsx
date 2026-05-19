@@ -12,10 +12,10 @@ const STATUSES = [
 ] as const;
 
 const EXTRA_STATUSES = [
-  { value: 'direct_filling-in-information', dot: 'online', label: 'Заполнение информации' },
+  { value: 'direct_filling-in-information', dot: 'direct', label: 'Заполнение информации' },
   { value: 'dnd_lunch-break', dot: 'dnd', label: 'Обеденный перерыв' },
   { value: 'dnd_technical-break', dot: 'dnd', label: 'Технический перерыв' },
-  { value: 'direct_diagnostics-and-configuration', dot: 'online', label: 'Диагностика и конфигурирование' },
+  { value: 'direct_diagnostics-and-configuration', dot: 'direct', label: 'Диагностика и конфигурирование' },
 ] as const;
 
 const ALL_STATUSES = [...STATUSES, ...EXTRA_STATUSES];

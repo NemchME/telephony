@@ -9,12 +9,13 @@ export type CdrRow = {
   cdpn?: string;
   cids?: string;
   type?: string;
-  duration?: number;
   connState?: string;
   'caller.commonName'?: string;
   'caller.commonNumber'?: string;
   'callee.commonName'?: string;
   'callee.commonNumber'?: string;
+  callerRecords?: unknown[];
+  calleeRecords?: unknown[];
   [k: string]: unknown;
 };
 

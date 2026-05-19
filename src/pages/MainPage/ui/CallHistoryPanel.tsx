@@ -4,6 +4,7 @@ import { formatDateTime, formatElapsed } from '@/shared/lib/format/time';
 import { useAppSelector } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { QuickDialDialog } from './QuickDialDialog';
+import { RecordingPlayer } from './RecordingPlayer';
 
 const LS_ROWS_KEY = 'cdr.rowsPerPage';
 
@@ -68,13 +69,14 @@ export function CallHistoryPanel() {
             <th>Имя</th>
             <th>Тип звонка</th>
             <th>Длительность</th>
+            <th>Запись</th>
           </tr>
         </thead>
         <tbody>
           {isFetching && records.length === 0 ? (
-            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Загрузка...</td></tr>
+            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Загрузка...</td></tr>
           ) : records.length === 0 ? (
-            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Нет записей</td></tr>
+            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 8, color: '#999' }}>Нет записей</td></tr>
           ) : (
             records.map((r: CdrRow, i: number) => {
               const createdMs = toMs(r.createdTime);
@@ -95,10 +97,22 @@ export function CallHistoryPanel() {
                 else if (!callerAuthorized && calleeAuthorized) isIncoming = true;
               }
 
-              const callType = isOutgoing
-                ? 'Исходящий'
-                : duration === 0 ?
-                'Пропущенный' : 'Входящий';
+              const isMissed = isIncoming && duration === 0;
+              const isOutgoingNoAnswer = isOutgoing && duration === 0;
+
+              const callType = isMissed
+                ? 'Пропущенный'
+                : isOutgoing
+                ? (isOutgoingNoAnswer ? 'Исходящий (нет ответа)' : 'Исходящий')
+                : 'Входящий'
+
+                
+
+              const callTypeClass = isMissed
+                ? 'cdr-type--missed'
+                : isOutgoingNoAnswer
+                ? 'cdr-type--no-answer'
+                : '';
 
               const number = isOutgoing
                 ? (r['callee.commonNumber'] as string | undefined) || r.cdpn || ''
@@ -106,26 +120,43 @@ export function CallHistoryPanel() {
               const name = isOutgoing
                 ? (r['callee.commonName'] as string | undefined) || ''
                 : (r['caller.commonName'] as string | undefined) || '';
+              const login = isOutgoing
+                ? (r['callee.userName'] as string | undefined) || ''
+                : (r['caller.userName'] as string | undefined) || '';
+              // dialTarget — что отправлять в звонок: если есть number, иначе логин
+              const dialTarget = number || login;
 
               return (
                 <tr key={r.id ?? i}>
                   <td>{createdMs ? formatDateTime(createdMs) : ''}</td>
                   <td>
                     {number ? (
-                      <span className="cdr-link" onClick={() => handleCallNumber(number, name)} title={`Позвонить: ${number}`}>
+                      <span className="cdr-link" onClick={() => handleCallNumber(dialTarget, name || login || number)} title={`Позвонить: ${number}`}>
                         {number}
                       </span>
                     ) : ''}
                   </td>
                   <td>
-                    {name ? (
-                      <span className="cdr-link" onClick={() => handleCallNumber(number, name)} title={`Позвонить: ${number}`}>
-                        {name}
+                    {(name || login) ? (
+                      <span
+                        className="cdr-link"
+                        onClick={() => dialTarget && handleCallNumber(dialTarget, name || login)}
+                        title={dialTarget ? `Позвонить: ${dialTarget}` : undefined}
+                      >
+                        {name || login}
                       </span>
                     ) : ''}
                   </td>
-                  <td>{callType}</td>
+                  <td className={callTypeClass}>{callType}</td>
                   <td>{duration > 0 ? formatElapsed(duration) : ''}</td>
+                  <td>
+                    {duration > 0
+                      && Array.isArray(r.callerRecords) && r.callerRecords.length > 0
+                      && Array.isArray(r.calleeRecords) && r.calleeRecords.length > 0
+                      && r.id
+                      ? <RecordingPlayer cdrId={r.id} />
+                      : ''}
+                  </td>
                 </tr>
               );
             })

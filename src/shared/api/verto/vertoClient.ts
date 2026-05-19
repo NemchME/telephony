@@ -35,14 +35,45 @@ export type VertoCall = {
   localSdp?: string;
 };
 
+export type RedirectInfo = {
+  redirgName?: string;
+  redirgNumber?: string;
+  xferorName?: string;
+  xferorNumber?: string;
+};
+
 export type VertoEventHandler = {
   onCallCreated?: (call: VertoCall) => void;
   onCallState?: (callID: string, state: VertoCallState, params?: Record<string, unknown>) => void;
   onCallMedia?: (callID: string, sdp: string) => void;
   onCallDisplay?: (callID: string, displayName: string, displayNumber: string) => void;
+  onCallRedirect?: (callID: string, info: RedirectInfo) => void;
   onReady?: () => void;
   onDisconnect?: () => void;
 };
+
+function extractRedirect(dp: Record<string, unknown>): RedirectInfo {
+  const out: RedirectInfo = {};
+  const redirg = dp.redirg as Record<string, unknown> | string | undefined;
+  const xferor = dp.xferor as Record<string, unknown> | string | undefined;
+  if (redirg && typeof redirg === 'object') {
+    if (redirg.name) out.redirgName = String(redirg.name);
+    if (redirg.number) out.redirgNumber = String(redirg.number);
+    if (redirg.caller_id_name) out.redirgName = String(redirg.caller_id_name);
+    if (redirg.caller_id_number) out.redirgNumber = String(redirg.caller_id_number);
+  } else if (typeof redirg === 'string') {
+    out.redirgNumber = redirg;
+  }
+  if (xferor && typeof xferor === 'object') {
+    if (xferor.name) out.xferorName = String(xferor.name);
+    if (xferor.number) out.xferorNumber = String(xferor.number);
+    if (xferor.caller_id_name) out.xferorName = String(xferor.caller_id_name);
+    if (xferor.caller_id_number) out.xferorNumber = String(xferor.caller_id_number);
+  } else if (typeof xferor === 'string') {
+    out.xferorNumber = xferor;
+  }
+  return out;
+}
 
 const RPC_TIMEOUT = 10_000;
 
@@ -212,6 +243,10 @@ export class VertoClient {
           remoteSdp: params.sdp as string,
         };
         this.handlers.onCallCreated?.(call);
+        const r = extractRedirect(dp);
+        if (callID && (r.redirgName || r.redirgNumber || r.xferorName || r.xferorNumber)) {
+          this.handlers.onCallRedirect?.(callID, r);
+        }
         if (id != null) this.sendResult(id, { method });
         break;
       }
@@ -238,6 +273,10 @@ export class VertoClient {
         const name = String(dp.display_name ?? dp.caller_id_name ?? '');
         const number = String(dp.display_number ?? dp.caller_id_number ?? '');
         this.handlers.onCallDisplay?.(callID, name, number);
+        const r = extractRedirect(dp);
+        if (callID && (r.redirgName || r.redirgNumber || r.xferorName || r.xferorNumber)) {
+          this.handlers.onCallRedirect?.(callID, r);
+        }
         if (id != null) this.sendResult(id, { method });
         break;
       }

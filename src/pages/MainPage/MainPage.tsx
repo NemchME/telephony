@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useBootstrap } from '@/features/boot/model/useBootstrap';
-import { useAppSelector } from '@/app/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { env } from '@/app/config/env';
 import { Header } from '@/shared/ui/layout/Header';
 import { CallQueueSidebar } from '@/shared/ui/layout/CallQueueSidebar';
 import { ActiveCallsTable } from './ui/ActiveCallsTable';
-import { TabBar } from './ui/TabBar';
+import { TabBar, type MainTab } from './ui/TabBar';
 import { UsersPanel } from './ui/UsersPanel';
 import { CallHistoryPanel } from './ui/CallHistoryPanel';
+import { markSeen } from '@/entities/missedCalls/model/missedCallsSlice';
+import { CrmPanel } from './ui/CrmPanel';
+import { useFaviconSync } from '@/shared/lib/favicon/useFaviconSync';
 
 function sendBusyStatusReset(userId: string) {
   const body = JSON.stringify({
@@ -21,8 +24,28 @@ function sendBusyStatusReset(userId: string) {
 
 export function MainPage() {
   const booted = useBootstrap();
-  const [activeTab, setActiveTab] = useState<'users' | 'history'>('users');
+  const [activeTab, setActiveTab] = useState<MainTab>('users');
   const userId = useAppSelector(selectUserId);
+  const dispatch = useAppDispatch();
+  const missedCount = useAppSelector((s) => s.missedCalls.unseenCount);
+  const crmList = useAppSelector((s) => s.crm.available);
+
+  useFaviconSync();
+
+  const handleTabChange = (tab: MainTab) => {
+    setActiveTab(tab);
+    if (tab === 'history') {
+      dispatch(markSeen());
+    }
+  };
+
+  // Если пользователь уже на вкладке «История», новые пропущенные
+  // должны сразу помечаться как просмотренные.
+  useEffect(() => {
+    if (activeTab === 'history' && missedCount > 0) {
+      dispatch(markSeen());
+    }
+  }, [activeTab, missedCount, dispatch]);
 
   useEffect(() => {
     if (!userId) return;
@@ -47,9 +70,16 @@ export function MainPage() {
         <CallQueueSidebar />
         <div className="main-content">
           <ActiveCallsTable />
-          <TabBar activeTab={activeTab} onChange={setActiveTab} />
+          <TabBar
+            activeTab={activeTab}
+            onChange={handleTabChange}
+            missedCount={missedCount}
+            showCrmTab={crmList.length > 0}
+          />
           <div className="tab-content">
-            {activeTab === 'users' ? <UsersPanel /> : <CallHistoryPanel />}
+            {activeTab === 'users' && <UsersPanel />}
+            {activeTab === 'history' && <CallHistoryPanel />}
+            {activeTab === 'crm' && <CrmPanel />}
           </div>
         </div>
       </div>

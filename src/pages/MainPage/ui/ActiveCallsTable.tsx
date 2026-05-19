@@ -24,7 +24,34 @@ type ActiveCall = {
   talkTime: number;
   isRinging: boolean;
   isVertoOnly?: boolean;
+  redirgName?: string;
+  redirgNumber?: string;
+  xferorName?: string;
+  xferorNumber?: string;
 };
+
+function pickStr(o: Record<string, unknown>, ...keys: string[]): string | undefined {
+  for (const k of keys) {
+    const v = o[k];
+    if (v != null && String(v) !== '') return String(v);
+  }
+  return undefined;
+}
+
+function extractServiceRedirect(svc: Record<string, unknown>): {
+  redirgName?: string; redirgNumber?: string; xferorName?: string; xferorNumber?: string;
+} {
+  const out: { redirgName?: string; redirgNumber?: string; xferorName?: string; xferorNumber?: string } = {};
+  const a = pickStr(svc, 'redirg.commonName', 'redirg.name', 'redirgName');
+  const b = pickStr(svc, 'redirg.commonNumber', 'redirg.number', 'redirgNumber');
+  const c = pickStr(svc, 'xferor.commonName', 'xferor.name', 'xferorName');
+  const d = pickStr(svc, 'xferor.commonNumber', 'xferor.number', 'xferorNumber');
+  if (a) out.redirgName = a;
+  if (b) out.redirgNumber = b;
+  if (c) out.xferorName = c;
+  if (d) out.xferorNumber = d;
+  return out;
+}
 
 const TERMINATED_STATES = new Set([
   'hangup', 'destroy', 'completed', 'failed', 'canceled',
@@ -69,6 +96,10 @@ export function ActiveCallsTable() {
       hangupCall({ callId: call.id });
     }
 
+    if (import.meta.env.DEV) {
+      console.log('[Hangup] serviceId:', call.id, 'bundleId:', call.bundleId);
+    }
+
     if (call.bundleId) {
       dispatch(bundleActions.removeBundle(call.bundleId));
     }
@@ -109,6 +140,7 @@ export function ActiveCallsTable() {
       const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
       const isRinging = connState === 'ringing' || connState === 'early';
 
+      const r = extractServiceRedirect(svc as unknown as Record<string, unknown>);
       calls.push({
         id: svc.id,
         bundleId: b.id,
@@ -120,6 +152,7 @@ export function ActiveCallsTable() {
         dialedNumber: String(svc.cdpn ?? ''),
         talkTime: elapsed,
         isRinging,
+        ...r,
       });
     }
 
@@ -132,6 +165,7 @@ export function ActiveCallsTable() {
         hasAnyActiveBundleService = true;
         const createdMs = toMs(svc.createdTime ?? svc.answeredTime);
         const elapsed = createdMs ? Math.max(0, Math.floor((now - createdMs) / 1000)) : 0;
+        const r = extractServiceRedirect(svc as unknown as Record<string, unknown>);
 
         calls.push({
           id: svc.id,
@@ -144,6 +178,7 @@ export function ActiveCallsTable() {
           dialedNumber: String(svc.cdpn ?? ''),
           talkTime: elapsed,
           isRinging: true,
+          ...r,
         });
       }
     }
@@ -158,7 +193,7 @@ export function ActiveCallsTable() {
     const elapsed = vc.startedAt ? Math.max(0, Math.floor((now - vc.startedAt) / 1000)) : 0;
     const isRinging = vc.state === 'trying' || vc.state === 'ringing' || vc.state === 'early';
 
-    calls.push({
+    const vcCall: ActiveCall = {
       id: vcId,
       bundleId: '',
       sideANumber: vc.direction === 'outbound' ? myNumber : (vc.callerIdNumber ?? ''),
@@ -170,7 +205,12 @@ export function ActiveCallsTable() {
       talkTime: elapsed,
       isRinging,
       isVertoOnly: true,
-    });
+    };
+    if (vc.redirgName) vcCall.redirgName = vc.redirgName;
+    if (vc.redirgNumber) vcCall.redirgNumber = vc.redirgNumber;
+    if (vc.xferorName) vcCall.xferorName = vc.xferorName;
+    if (vc.xferorNumber) vcCall.xferorNumber = vc.xferorNumber;
+    calls.push(vcCall);
   }
 
   return (
@@ -204,26 +244,51 @@ export function ActiveCallsTable() {
               </td>
             </tr>
           ) : (
-            calls.map((c) => (
-              <tr key={c.id}>
-                <td>{c.sideANumber}</td>
-                <td>{c.sideAUser}</td>
-                <td>{c.sideBNumber}</td>
-                <td>{c.sideBUser}</td>
-                <td>{translateState(c.state)}</td>
-                <td>{c.dialedNumber}</td>
-                <td>{formatElapsed(c.talkTime)}</td>
-                <td>
-                  <button
-                    className={c.isRinging ? 'cancel-call-btn' : 'hangup-btn'}
-                    onClick={() => handleHangup(c)}
-                    title={c.isRinging ? 'Отменить звонок' : 'Завершить'}
-                  >
-                    {c.isRinging ? '✕ Отмена' : '✕'}
-                  </button>
-                </td>
-              </tr>
-            ))
+            calls.flatMap((c) => {
+              const hasRedirg = c.redirgName || c.redirgNumber;
+              const hasXferor = c.xferorName || c.xferorNumber;
+              const rows = [
+                <tr key={c.id}>
+                  <td>{c.sideANumber}</td>
+                  <td>{c.sideAUser}</td>
+                  <td>{c.sideBNumber}</td>
+                  <td>{c.sideBUser}</td>
+                  <td>{translateState(c.state)}</td>
+                  <td>{c.dialedNumber}</td>
+                  <td>{formatElapsed(c.talkTime)}</td>
+                  <td>
+                    <button
+                      className={c.isRinging ? 'cancel-call-btn' : 'hangup-btn'}
+                      onClick={() => handleHangup(c)}
+                      title={c.isRinging ? 'Отменить звонок' : 'Завершить'}
+                    >
+                      {c.isRinging ? '✕ Отмена' : '✕'}
+                    </button>
+                  </td>
+                </tr>,
+              ];
+              if (hasRedirg || hasXferor) {
+                rows.push(
+                  <tr key={`${c.id}-redirect`} className="active-call-redirect">
+                    <td colSpan={8} style={{ fontSize: 11, color: '#666', paddingLeft: 16 }}>
+                      {hasRedirg && (
+                        <span style={{ marginRight: 12 }}>
+                          Перенаправил: <b>{c.redirgName ?? ''}</b>
+                          {c.redirgNumber ? ` (${c.redirgNumber})` : ''}
+                        </span>
+                      )}
+                      {hasXferor && (
+                        <span>
+                          Перенаправлено на: <b>{c.xferorName ?? ''}</b>
+                          {c.xferorNumber ? ` (${c.xferorNumber})` : ''}
+                        </span>
+                      )}
+                    </td>
+                  </tr>,
+                );
+              }
+              return rows;
+            })
           )}
         </tbody>
       </table>

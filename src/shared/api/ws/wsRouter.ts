@@ -10,6 +10,16 @@ import {
 import { bundleActions, type Bundle, type BundleService } from '@/entities/bundle/model/bundleSlice';
 import { cdrActions, type CdrRecord } from '@/entities/cdr/model/cdrSlice';
 import { setAvailStatus } from '@/entities/session/model/sessionSlice';
+import { incrementMissed } from '@/entities/missedCalls/model/missedCallsSlice';
+import { crmActions } from '@/entities/crm/model/crmSlice';
+import {
+  showIncomingCallNotification,
+  showMissedCallNotification,
+  closeIncomingNotification,
+} from '@/shared/lib/notifications/notifications';
+
+const wsNotifiedRinging = new Set<string>();
+const wsNotifiedTerminated = new Set<string>();
 import type { RootState } from '@/app/store/rootReducer';
 
 export type WsRouteCtx = {
@@ -46,6 +56,10 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
   if (!event?.type) return;
   const data = event.payload;
   if (!data || typeof data !== 'object') return;
+
+  if (import.meta.env.DEV) {
+    console.log('[WS]', event.type, data);
+  }
 
   switch (event.type) {
     case 'VirtaEvent.User.Updated': {
@@ -95,11 +109,59 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
     case 'VirtaEvent.BundleState.Updated': {
       const items = extractItems<Bundle>(data);
       for (const b of items) {
+        if (import.meta.env.DEV) {
+          for (const s of b.services ?? []) {
+            if (s.type === 'Call') {
+              console.log('[WS] Bundle call service:', {
+                bundleId: b.id,
+                serviceId: s.id,
+                connState: s.connState,
+                callState: s.callState,
+                hangupTime: s.hangupTime,
+              });
+            }
+          }
+        }
+
+        const session = ctx.getState().session;
+        const myId = session.userId;
+        const useVerto = session.useVerto;
 
         if (isBundleTerminated(b)) {
+          if (import.meta.env.DEV) {
+            console.log('[WS] Bundle terminated, removing:', b.id);
+          }
+          for (const s of b.services ?? []) {
+            if (s.type !== 'Call') continue;
+            if (wsNotifiedRinging.has(s.id)) {
+              wsNotifiedTerminated.add(s.id);
+              closeIncomingNotification(s.id);
+            }
+          }
           ctx.dispatch(bundleActions.removeBundle(b.id));
         } else {
           ctx.dispatch(bundleActions.upsertBundle(b));
+          for (const s of b.services ?? []) {
+            if (s.type !== 'Call') continue;
+            const calleeUserId = s['callee.userID'] as string | undefined;
+            const cgpn = s.cgpn || (s['caller.commonNumber'] as string | undefined);
+            const isInbound = calleeUserId && myId && calleeUserId === myId;
+            if (!isInbound) continue;
+            if (s.connState === 'ringing' && cgpn) {
+              ctx.dispatch(crmActions.setLastIncomingNumber(String(cgpn)));
+            }
+
+            if (!useVerto && s.connState === 'ringing' && !wsNotifiedRinging.has(s.id)) {
+              wsNotifiedRinging.add(s.id);
+              const name = (s['caller.commonName'] as string | undefined) || '';
+              void showIncomingCallNotification({
+                callID: s.id,
+                name,
+                number: String(cgpn ?? ''),
+                canAnswer: false,
+              });
+            }
+          }
         }
       }
       break;
@@ -119,7 +181,28 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
       const items = extractItems<CdrRecord>(data);
       for (const r of items) {
         ctx.dispatch(cdrActions.upsertOne(r));
-        console.log(r);
+
+        const state = ctx.getState();
+        const myId = state.session.userId;
+        const useVerto = state.session.useVerto;
+        if (!myId) continue;
+
+        const calleeUserId = (r as Record<string, unknown>)['callee.userID'] as string | undefined;
+        const callerAuthorized = Boolean((r as Record<string, unknown>)['caller.authorized']);
+        const calleeAuthorized = Boolean((r as Record<string, unknown>)['callee.authorized']);
+        const isIncoming = calleeUserId === myId || (!callerAuthorized && calleeAuthorized);
+
+        const answered = Number(r.answeredTime ?? 0) > 0;
+        const hangup = Number(r.hangupTime ?? 0) > 0;
+
+        if (isIncoming && !answered && hangup) {
+          ctx.dispatch(incrementMissed({ id: r.id }));
+          if (!useVerto) {
+            const cgpn = (r['caller.commonNumber'] as string | undefined) || r.cgpn || '';
+            const name = (r['caller.commonName'] as string | undefined) || '';
+            void showMissedCallNotification({ callID: r.id, name, number: String(cgpn) });
+          }
+        }
       }
       break;
     }

@@ -1,9 +1,13 @@
+export type MainTab = 'users' | 'history' | 'crm';
+
 type Props = {
-  activeTab: 'users' | 'history';
-  onChange: (tab: 'users' | 'history') => void;
+  activeTab: MainTab;
+  onChange: (tab: MainTab) => void;
+  missedCount?: number;
+  showCrmTab?: boolean;
 };
 
-export function TabBar({ activeTab, onChange }: Props) {
+export function TabBar({ activeTab, onChange, missedCount = 0, showCrmTab = false }: Props) {
   return (
     <div className="tab-bar">
       <div
@@ -17,7 +21,16 @@ export function TabBar({ activeTab, onChange }: Props) {
         onClick={() => onChange('history')}
       >
         История звонков
+        {missedCount > 0 && <span className="tab-badge">{missedCount}</span>}
       </div>
+      {showCrmTab && (
+        <div
+          className={`tab ${activeTab === 'crm' ? 'active' : ''}`}
+          onClick={() => onChange('crm')}
+        >
+          CRM
+        </div>
+      )}
     </div>
   );
 }
