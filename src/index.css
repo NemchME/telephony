@@ -734,6 +734,11 @@ a:hover {
   transition: background 0.1s;
   min-height: 26px;
 }
+
+.user-list__agent:hover {
+  background-color: rgba(0,0,0, 0.1);
+}
+
 .user-list__group {
   grid-column: 1 / -1;
 }
@@ -1104,6 +1109,19 @@ a:hover {
 .cdr-type--no-answer {
   color: var(--color-text-light, #777);
   font-style: italic;
+}
+
+.call-redirect-info {
+  font-size: 11px;
+  color: var(--color-direct, #8000ff);
+  line-height: 1.2;
+  margin-top: 1px;
+}
+.call-redirect-info__arrow {
+  display: inline-block;
+  transform: rotate(-90deg);
+  font-size: 12px;
+  vertical-align: -1px;
 }
 
 .tab {

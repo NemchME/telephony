@@ -150,12 +150,30 @@ export function CallHistoryPanel() {
                   <td className={callTypeClass}>{callType}</td>
                   <td>{duration > 0 ? formatElapsed(duration) : ''}</td>
                   <td>
-                    {duration > 0
-                      && Array.isArray(r.callerRecords) && r.callerRecords.length > 0
-                      && Array.isArray(r.calleeRecords) && r.calleeRecords.length > 0
-                      && r.id
-                      ? <RecordingPlayer cdrId={r.id} />
-                      : ''}
+                    {(() => {
+                      // Поля записей могут приходить либо с camelCase, либо с
+                      // точечной нотацией — пробуем оба варианта.
+                      const callerRec = (r.callerRecords ?? (r as Record<string, unknown>)['caller.records']) as unknown;
+                      const calleeRec = (r.calleeRecords ?? (r as Record<string, unknown>)['callee.records']) as unknown;
+                      const hasCaller = Array.isArray(callerRec) && callerRec.length > 0;
+                      const hasCallee = Array.isArray(calleeRec) && calleeRec.length > 0;
+                      if (import.meta.env.DEV && r.id && duration > 0 && (!hasCaller || !hasCallee)) {
+                        // помогает понять, как сервер называет поля
+                        console.debug('[CDR] no records for', r.id, {
+                          callerRecords: r.callerRecords,
+                          calleeRecords: r.calleeRecords,
+                          'caller.records': (r as Record<string, unknown>)['caller.records'],
+                          'callee.records': (r as Record<string, unknown>)['callee.records'],
+                        });
+                      }
+                      // Многие backend'ы хранят запись по bundleID (id «звонка»),
+                      // а не по CDR.id. Берём bundleID если он есть.
+                      const bundleId = (r as { bundleID?: string }).bundleID;
+                      const recId = bundleId || r.id;
+                      return duration > 0 && hasCaller && hasCallee && recId
+                        ? <RecordingPlayer cdrId={r.id ?? ''} recordingId={recId} />
+                        : '';
+                    })()}
                   </td>
                 </tr>
               );

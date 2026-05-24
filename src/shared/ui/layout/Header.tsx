@@ -65,7 +65,6 @@ export function Header() {
     if (!q || q.length < 1) return [];
     const results: { id: string; label: string; number: string }[] = [];
 
-    // Groups
     for (const g of callGroups) {
       const gName = (g.commonName ?? g.name ?? '').toLowerCase();
       const nums = g.numbers ?? [];
@@ -84,24 +83,25 @@ export function Header() {
       if (results.length >= 8) break;
     }
 
-    // Users
     for (const uid of allUsers.ids) {
       if (results.length >= 8) break;
       const u = allUsers.entities[uid];
       if (!u || uid === userId) continue;
-      const name = (u.commonName ?? u.name ?? '').toLowerCase();
+      const cname = (u.commonName ?? '').toLowerCase();
+      const uname = (u.name ?? '').toLowerCase();
       const nums = u.numbers ?? [];
-      const nameMatch = name.includes(q);
+      const nameMatch = cname.includes(q) || uname.includes(q);
       const numMatch = nums.some((n) => n.includes(q));
       if (nameMatch || numMatch) {
         const num = nums[0] ?? '';
-        if (num) {
-          results.push({
-            id: uid,
-            label: `${u.commonName ?? u.name ?? uid} (${num})`,
-            number: num,
-          });
-        }
+        const target = num || u.name || '';
+        if (!target) continue;
+        const display = u.commonName ?? u.name ?? uid;
+        results.push({
+          id: uid,
+          label: num ? `${display} (${num})` : `${display} (логин: ${u.name ?? ''})`,
+          number: target,
+        });
       }
     }
     return results;
@@ -148,7 +148,6 @@ export function Header() {
     if (!q) return null;
     if (/^[\d+\-() #]+$/.test(q)) return q;
     const lower = q.toLowerCase();
-    // Search groups first
     for (const g of callGroups) {
       const gName = (g.commonName ?? g.name ?? '').toLowerCase();
       if (gName === lower || gName.includes(lower)) {
@@ -156,7 +155,6 @@ export function Header() {
         if (num) return num;
       }
     }
-    // Then users — prefer number, fall back to login (name)
     for (const uid of allUsers.ids) {
       const u = allUsers.entities[uid];
       if (!u) continue;
@@ -165,7 +163,7 @@ export function Header() {
       if (cname === lower || cname.includes(lower) || uname === lower || uname.includes(lower)) {
         const num = u.numbers?.[0];
         if (num) return num;
-        if (u.name) return u.name; // login fallback
+        if (u.name) return u.name; 
       }
     }
     return q;
@@ -388,12 +386,6 @@ export function Header() {
         </span>
         <StatusDropdown />
         <div className="header__spacer" />
-
-        {/* {useVerto && (
-          <span className="header__verto-status" title={`Verto: ${vertoState}`}>
-            {vertoStatusIcon}
-          </span>
-        )} */}
 
         {!useVerto ? (
           <span className={`header__device-msg ${myNetworkStatus === 1 ? 'header__device-msg--online' : 'header__device-msg--offline'}`}>

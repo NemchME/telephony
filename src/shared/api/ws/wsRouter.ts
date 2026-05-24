@@ -137,6 +137,18 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
               wsNotifiedTerminated.add(s.id);
               closeIncomingNotification(s.id);
             }
+
+            // Засчитываем пропущенный: входящий звонок завершился без ответа.
+            const calleeUserId = s['callee.userID'] as string | undefined;
+            const callerAuthorized = Boolean(s['caller.authorized']);
+            const calleeAuthorized = Boolean(s['callee.authorized']);
+            const isInboundForMe =
+              (!!myId && calleeUserId === myId) ||
+              (!callerAuthorized && calleeAuthorized);
+            const wasAnswered = !!s.answeredTime;
+            if (isInboundForMe && !wasAnswered) {
+              ctx.dispatch(incrementMissed({ id: s.id }));
+            }
           }
           ctx.dispatch(bundleActions.removeBundle(b.id));
         } else {

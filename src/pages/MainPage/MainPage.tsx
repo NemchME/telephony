@@ -12,6 +12,8 @@ import { CallHistoryPanel } from './ui/CallHistoryPanel';
 import { markSeen } from '@/entities/missedCalls/model/missedCallsSlice';
 import { CrmPanel } from './ui/CrmPanel';
 import { useFaviconSync } from '@/shared/lib/favicon/useFaviconSync';
+import { useMissedCallsTitleSync } from '@/shared/lib/title/useMissedCallsTitleSync';
+import { ensureNotificationPermission } from '@/shared/lib/notifications/notifications';
 
 function sendBusyStatusReset(userId: string) {
   const body = JSON.stringify({
@@ -31,6 +33,11 @@ export function MainPage() {
   const crmList = useAppSelector((s) => s.crm.available);
 
   useFaviconSync();
+  useMissedCallsTitleSync();
+
+  useEffect(() => {
+    if (userId) void ensureNotificationPermission();
+  }, [userId]);
 
   const handleTabChange = (tab: MainTab) => {
     setActiveTab(tab);
@@ -39,8 +46,6 @@ export function MainPage() {
     }
   };
 
-  // Если пользователь уже на вкладке «История», новые пропущенные
-  // должны сразу помечаться как просмотренные.
   useEffect(() => {
     if (activeTab === 'history' && missedCount > 0) {
       dispatch(markSeen());

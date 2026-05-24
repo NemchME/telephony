@@ -244,51 +244,54 @@ export function ActiveCallsTable() {
               </td>
             </tr>
           ) : (
-            calls.flatMap((c) => {
-              const hasRedirg = c.redirgName || c.redirgNumber;
-              const hasXferor = c.xferorName || c.xferorNumber;
-              const rows = [
-                <tr key={c.id}>
-                  <td>{c.sideANumber}</td>
-                  <td>{c.sideAUser}</td>
-                  <td>{c.sideBNumber}</td>
-                  <td>{c.sideBUser}</td>
-                  <td>{translateState(c.state)}</td>
-                  <td>{c.dialedNumber}</td>
-                  <td>{formatElapsed(c.talkTime)}</td>
-                  <td>
-                    <button
-                      className={c.isRinging ? 'cancel-call-btn' : 'hangup-btn'}
-                      onClick={() => handleHangup(c)}
-                      title={c.isRinging ? 'Отменить звонок' : 'Завершить'}
-                    >
-                      {c.isRinging ? '✕ Отмена' : '✕'}
-                    </button>
-                  </td>
-                </tr>,
-              ];
-              if (hasRedirg || hasXferor) {
-                rows.push(
-                  <tr key={`${c.id}-redirect`} className="active-call-redirect">
-                    <td colSpan={8} style={{ fontSize: 11, color: '#666', paddingLeft: 16 }}>
-                      {hasRedirg && (
-                        <span style={{ marginRight: 12 }}>
-                          Перенаправил: <b>{c.redirgName ?? ''}</b>
-                          {c.redirgNumber ? ` (${c.redirgNumber})` : ''}
-                        </span>
-                      )}
-                      {hasXferor && (
-                        <span>
-                          Перенаправлено на: <b>{c.xferorName ?? ''}</b>
-                          {c.xferorNumber ? ` (${c.xferorNumber})` : ''}
-                        </span>
-                      )}
-                    </td>
-                  </tr>,
-                );
-              }
-              return rows;
-            })
+            calls.map((c) => (
+              <tr key={c.id}>
+                <td>
+                  {c.sideANumber}
+                  {c.redirgNumber && (
+                    <div className="call-redirect-info" title="Перенаправляющая сторона">
+                      {c.redirgNumber} <span className="call-redirect-info__arrow">↳</span>
+                    </div>
+                  )}
+                </td>
+                <td>
+                  {c.sideAUser}
+                  {c.redirgName && (
+                    <div className="call-redirect-info" title="Перенаправляющая сторона">
+                      {c.redirgName}
+                    </div>
+                  )}
+                </td>
+                <td>
+                  {c.sideBNumber}
+                  {c.xferorNumber && (
+                    <div className="call-redirect-info" title="Перенаправляемая сторона">
+                      {c.xferorNumber} <span className="call-redirect-info__arrow">↳</span>
+                    </div>
+                  )}
+                </td>
+                <td>
+                  {c.sideBUser}
+                  {c.xferorName && (
+                    <div className="call-redirect-info" title="Перенаправляемая сторона">
+                      {c.xferorName}
+                    </div>
+                  )}
+                </td>
+                <td>{translateState(c.state)}</td>
+                <td>{c.dialedNumber}</td>
+                <td>{formatElapsed(c.talkTime)}</td>
+                <td>
+                  <button
+                    className={c.isRinging ? 'cancel-call-btn' : 'hangup-btn'}
+                    onClick={() => handleHangup(c)}
+                    title={c.isRinging ? 'Отменить звонок' : 'Завершить'}
+                  >
+                    {c.isRinging ? '✕ Отмена' : '✕'}
+                  </button>
+                </td>
+              </tr>
+            ))
           )}
         </tbody>
       </table>
