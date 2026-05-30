@@ -8,6 +8,7 @@ export type SessionUser = {
   adminStatus?: number;
   availStatus?: string;
   dod?: string;
+  crmList?: string[];
 };
 
 export type WsConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';

@@ -734,11 +734,6 @@ a:hover {
   transition: background 0.1s;
   min-height: 26px;
 }
-
-.user-list__agent:hover {
-  background-color: rgba(0,0,0, 0.1);
-}
-
 .user-list__group {
   grid-column: 1 / -1;
 }
@@ -838,6 +833,20 @@ a:hover {
 
 .user-list__agent--online:hover {
   background: #d5efd5;
+}
+
+.user-list__agent--away {
+  background: #fff4c2;
+}
+.user-list__agent--away:hover {
+  background: #ffe97a;
+}
+
+.user-list__agent--dnd {
+  background: #f7c5c0;
+}
+.user-list__agent--dnd:hover {
+  background: #ef8a82;
 }
 .user-list__agent--left-group {
   background: #ececec;

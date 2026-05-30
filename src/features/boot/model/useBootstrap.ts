@@ -16,13 +16,12 @@ import { groupOrderActions } from '@/features/realtime/model/groupOrderSlice';
 import { loadCrmTemplates } from '@/shared/api/crm/loadCrmTemplates';
 import { crmActions, setCrmTemplates } from '@/entities/crm/model/crmSlice';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
-import { selectUserEntities } from '@/entities/user/model/userSelectors';
 
 export function useBootstrap() {
   const dispatch = useAppDispatch();
   const isAuthed = useAppSelector(selectIsAuthed);
   const userId = useAppSelector(selectUserId);
-  const userEntities = useAppSelector(selectUserEntities);
+  const sessionUser = useAppSelector((s) => s.session.user);
   const [booted, setBooted] = useState(false);
 
   useEffect(() => {
@@ -61,19 +60,29 @@ export function useBootstrap() {
 
         dispatch(groupOrderActions.ensureContains((groupsRes?.elements ?? []).map((g: { id: string }) => g.id)));
 
-        // Load CRM templates (best-effort; doesn't block boot)
+        const allUsers = usersRes?.elements ?? [];
+        const meFromSearch = userId ? allUsers.find((u) => u.id === userId) : undefined;
+        const userCrms =
+          (meFromSearch as { crmList?: string[] } | undefined)?.crmList ??
+          sessionUser?.crmList;
+        if (import.meta.env.DEV) {
+          console.log('[CRM] crmList for', userId,
+            '→ search:', (meFromSearch as { crmList?: string[] } | undefined)?.crmList,
+            'session:', sessionUser?.crmList);
+        }
+
         loadCrmTemplates()
           .then((templates) => {
             if (cancelled) return;
             setCrmTemplates(templates);
-            const me = userId ? userEntities[userId] : undefined;
-            const userCrms = me?.crms;
-            const allowedIds = Array.isArray(userCrms)
-              ? userCrms.map((x) => String(x))
-              : Object.keys(templates);
+            const allowedIds = Array.isArray(userCrms) ? userCrms.map((x) => String(x)) : [];
             const available = allowedIds
               .filter((id) => templates[id])
               .map((id) => ({ id, name: templates[id]!.name }));
+            if (import.meta.env.DEV) {
+              console.log('[CRM] templates loaded:', Object.keys(templates),
+                'allowed:', allowedIds, 'available:', available);
+            }
             dispatch(crmActions.setAvailable(available));
           })
           .catch((err) => {

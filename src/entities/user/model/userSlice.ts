@@ -13,7 +13,7 @@ export type User = {
   domainID?: string;
   maxCalls?: number;
   settings?: string;
-  crms?: string[];
+  crmList?: string[];
   lastModifiedTime?: number;
   lastModifiedAvailStatus?: number;
 };

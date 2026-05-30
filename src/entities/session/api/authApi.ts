@@ -21,6 +21,7 @@ export type LoginResponse = {
       adminStatus?: number;
       availStatus?: string;
       dod?: string;
+      crmList?: string[];
     };
     sessionID: string;
     vertoUrl?: string;

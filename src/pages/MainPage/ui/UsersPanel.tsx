@@ -292,9 +292,22 @@ function AgentRowItem({
     resetUserState({ userID: row.userId });
   };
 
+  const presenceClass =
+    row.leftGroup
+      ? ''
+      : row.presence === 'ONLINE_DND'
+      ? 'user-list__agent--dnd'
+      : row.presence === 'ONLINE_AWAY'
+      ? 'user-list__agent--away'
+      : row.presence === 'ONLINE_DIRECT'
+      ? 'user-list__agent--direct'
+      : row.presence !== 'OFFLINE' && row.presence !== 'UNKNOWN'
+      ? 'user-list__agent--online'
+      : '';
+
   return (
     <div
-      className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''} ${row.leftGroup ? 'user-list__agent--left-group' : ''} ${row.presence === "ONLINE_DIRECT"? 'user-list__agent--direct' : !row.leftGroup && row.presence !== 'OFFLINE' && row.presence !== 'UNKNOWN' ? 'user-list__agent--online' : ''}`}
+      className={`user-list__agent ${row.presence === 'ONLINE_BUSY' ? 'user-list__agent--selected' : ''} ${row.leftGroup ? 'user-list__agent--left-group' : ''} ${presenceClass}`}
     >
       <span className="user-list__col--icon">
         {isWebClientActive && <span className="web-client-icon" title="Веб-клиент активен">🌐</span>}

@@ -3,6 +3,7 @@ import { useAppSelector } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { useUpdateUserSettingsMutation } from '@/entities/user/api/userApi';
 import { selectUserEntities } from '@/entities/user/model/userSelectors';
+import { useResetUserStateMutation } from '@/entities/callGroup/api/callGroupApi';
 import {
   getInputDeviceId,
   setInputDeviceId,
@@ -17,8 +18,8 @@ import {
 const RINGTONES = ['apple_ring', 'bell_ring'] as const;
 
 const RINGTONE_LABEL: Record<string, string> = {
-  apple_ring: 'apple_ring',
-  bell_ring: 'bell_ring',
+  apple_ring: 'Apple',
+  bell_ring: 'Колокольчик',
 };
 
 const LS_STUN = 'settings.useStun';
@@ -66,6 +67,7 @@ export function SettingsModal({ onClose }: Props) {
   const user = userId ? userEntities[userId] : undefined;
   const serverSettings = parseServerSettings(user?.settings);
   const [updateSettings] = useUpdateUserSettingsMutation();
+  const [resetUserState] = useResetUserStateMutation();
 
   const initialRingtone = serverSettings.ringtone && (RINGTONES as readonly string[]).includes(serverSettings.ringtone)
     ? serverSettings.ringtone
@@ -95,6 +97,18 @@ export function SettingsModal({ onClose }: Props) {
       setOutputs(list.outputs);
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch { /* ignore */ }
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   const saveToServer = (newRingtone: string, newEndCallSound: boolean) => {
@@ -139,10 +153,21 @@ export function SettingsModal({ onClose }: Props) {
     setOutputDeviceId(id || null);
   };
 
+  const handleResetMyState = () => {
+    if (!userId) return;
+    const ok = window.confirm('Сбросить ваше текущее состояние? Этот эффект — как у кнопки «Сброс» в списке пользователей, но всегда доступен.');
+    if (!ok) return;
+    resetUserState({ userID: userId });
+  };
+
   const handleTestOutput = () => {
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch { /* ignore */ }
+    }
     const audio = new Audio('/sounds/end_call.mp3');
     audio.volume = 0.5;
     applySinkId(audio);
+    audioRef.current = audio;
     audio.play().catch(() => {});
   };
 
@@ -244,6 +269,23 @@ export function SettingsModal({ onClose }: Props) {
               />
               Использовать STUN (для работы за NAT)
             </label>
+          </div>
+
+          <div className="settings-section">
+            <button
+              onClick={handleResetMyState}
+              disabled={!userId}
+              style={{
+                padding: '6px 14px',
+                background: '#f7c5c0',
+                border: '1px solid #c95349',
+                borderRadius: 4,
+                cursor: userId ? 'pointer' : 'not-allowed',
+                fontWeight: 500,
+              }}
+            >
+              Сбросить своё состояние
+            </button>
           </div>
         </div>
       </div>
