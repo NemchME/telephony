@@ -35,6 +35,13 @@ function saveToStorage(state: MissedCallsState) {
   }
 }
 
+const LS_OWNER_KEY = 'missedCalls.owner';
+
+
+function getOwnerFromStorage(): string | null {
+  try { return localStorage.getItem(LS_OWNER_KEY); } catch { return null; }
+}
+
 const initialState: MissedCallsState = loadFromStorage();
 
 export const missedCallsSlice = createSlice({
@@ -62,9 +69,23 @@ export const missedCallsSlice = createSlice({
       state.countedIds = [];
       saveToStorage(state);
     },
+
+    bindToUser(state, action: PayloadAction<string | null>) {
+      const newOwner = action.payload;
+      const prevOwner = getOwnerFromStorage();
+      if (newOwner !== prevOwner) {
+        state.unseenCount = 0;
+        state.countedIds = [];
+        saveToStorage(state);
+        try {
+          if (newOwner) localStorage.setItem(LS_OWNER_KEY, newOwner);
+          else localStorage.removeItem(LS_OWNER_KEY);
+        } catch { /* ignore */ }
+      }
+    },
   },
 });
 
 export const missedCallsActions = missedCallsSlice.actions;
-export const { incrementMissed, markSeen } = missedCallsSlice.actions;
+export const { incrementMissed, markSeen, bindToUser } = missedCallsSlice.actions;
 export const missedCallsReducer = missedCallsSlice.reducer;

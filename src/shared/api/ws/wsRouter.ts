@@ -131,23 +131,12 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
           if (import.meta.env.DEV) {
             console.log('[WS] Bundle terminated, removing:', b.id);
           }
+
           for (const s of b.services ?? []) {
             if (s.type !== 'Call') continue;
             if (wsNotifiedRinging.has(s.id)) {
               wsNotifiedTerminated.add(s.id);
               closeIncomingNotification(s.id);
-            }
-
-            // Засчитываем пропущенный: входящий звонок завершился без ответа.
-            const calleeUserId = s['callee.userID'] as string | undefined;
-            const callerAuthorized = Boolean(s['caller.authorized']);
-            const calleeAuthorized = Boolean(s['callee.authorized']);
-            const isInboundForMe =
-              (!!myId && calleeUserId === myId) ||
-              (!callerAuthorized && calleeAuthorized);
-            const wasAnswered = !!s.answeredTime;
-            if (isInboundForMe && !wasAnswered) {
-              ctx.dispatch(incrementMissed({ id: s.id }));
             }
           }
           ctx.dispatch(bundleActions.removeBundle(b.id));
@@ -156,14 +145,27 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
           for (const s of b.services ?? []) {
             if (s.type !== 'Call') continue;
             const calleeUserId = s['callee.userID'] as string | undefined;
+            const callerUserId = s['caller.userID'] as string | undefined;
             const cgpn = s.cgpn || (s['caller.commonNumber'] as string | undefined);
-            const isInbound = calleeUserId && myId && calleeUserId === myId;
-            if (!isInbound) continue;
-            if (s.connState === 'ringing' && cgpn) {
-              ctx.dispatch(crmActions.setLastIncomingNumber(String(cgpn)));
+            const cdpn = s.cdpn || (s['callee.commonNumber'] as string | undefined);
+            const isInbound = !!(calleeUserId && myId && calleeUserId === myId);
+            const isOutbound = !!(callerUserId && myId && callerUserId === myId);
+            const isMyCall = isInbound || isOutbound;
+
+
+            if (isMyCall && !TERMINATED_CONN_STATES.has(s.connState ?? '')) {
+              const otherNumber = isInbound ? cgpn : cdpn;
+              if (otherNumber) {
+                if (import.meta.env.DEV) {
+                  console.log('[CRM] lastIncomingNumber ←', otherNumber,
+                    '(service', s.id, isInbound ? 'inbound' : 'outbound',
+                    'state', s.connState, ')');
+                }
+                ctx.dispatch(crmActions.setLastIncomingNumber(String(otherNumber)));
+              }
             }
 
-            if (!useVerto && s.connState === 'ringing' && !wsNotifiedRinging.has(s.id)) {
+            if (!useVerto && isInbound && s.connState === 'ringing' && !wsNotifiedRinging.has(s.id)) {
               wsNotifiedRinging.add(s.id);
               const name = (s['caller.commonName'] as string | undefined) || '';
               void showIncomingCallNotification({
@@ -200,12 +202,21 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
         if (!myId) continue;
 
         const calleeUserId = (r as Record<string, unknown>)['callee.userID'] as string | undefined;
+        const callerUserId = (r as Record<string, unknown>)['caller.userID'] as string | undefined;
         const callerAuthorized = Boolean((r as Record<string, unknown>)['caller.authorized']);
         const calleeAuthorized = Boolean((r as Record<string, unknown>)['callee.authorized']);
-        const isIncoming = calleeUserId === myId || (!callerAuthorized && calleeAuthorized);
+
+        const isIncoming =
+          (calleeUserId === myId && callerUserId !== myId) ||
+          (!callerAuthorized && calleeAuthorized);
 
         const answered = Number(r.answeredTime ?? 0) > 0;
         const hangup = Number(r.hangupTime ?? 0) > 0;
+
+        if (import.meta.env.DEV && isIncoming) {
+          console.log('[CDR] incoming', r.id, 'answered:', answered, 'hangup:', hangup,
+            '→ missed:', !answered && hangup);
+        }
 
         if (isIncoming && !answered && hangup) {
           ctx.dispatch(incrementMissed({ id: r.id }));

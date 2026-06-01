@@ -38,20 +38,25 @@ export function CrmPanel() {
   }, [available]);
 
   useEffect(() => {
+    if (available.length === 0) return;
+    if (!lastIncomingNumber) return;
+    const phoneNum: string = lastIncomingNumber;
+    if (lastAppliedNumberRef.current === phoneNum) return;
+
     for (const c of available) {
       const el = iframeRefs.current[c.id];
       if (!el) continue;
       const tpl = getCrmTemplate(c.id);
       if (!tpl) continue;
       try {
-        el.src = tpl.url(lastIncomingNumber);
+        el.src = tpl.url(phoneNum);
         initializedRef.current.add(c.id);
       } catch (err) {
         if (import.meta.env.DEV) console.warn('[CRM] update failed', c.id, err);
       }
     }
     if (available[0]) setActiveId(available[0].id);
-    lastAppliedNumberRef.current = lastIncomingNumber;
+    lastAppliedNumberRef.current = phoneNum;
   }, [lastIncomingNumber, available]);
 
   if (available.length === 0) {

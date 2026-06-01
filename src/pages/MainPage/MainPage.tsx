@@ -9,7 +9,7 @@ import { ActiveCallsTable } from './ui/ActiveCallsTable';
 import { TabBar, type MainTab } from './ui/TabBar';
 import { UsersPanel } from './ui/UsersPanel';
 import { CallHistoryPanel } from './ui/CallHistoryPanel';
-import { markSeen } from '@/entities/missedCalls/model/missedCallsSlice';
+import { markSeen, bindToUser } from '@/entities/missedCalls/model/missedCallsSlice';
 import { CrmPanel } from './ui/CrmPanel';
 import { useFaviconSync } from '@/shared/lib/favicon/useFaviconSync';
 import { useMissedCallsTitleSync } from '@/shared/lib/title/useMissedCallsTitleSync';
@@ -38,6 +38,10 @@ export function MainPage() {
   useEffect(() => {
     if (userId) void ensureNotificationPermission();
   }, [userId]);
+
+  useEffect(() => {
+    dispatch(bindToUser(userId ?? null));
+  }, [userId, dispatch]);
 
   const handleTabChange = (tab: MainTab) => {
     setActiveTab(tab);
