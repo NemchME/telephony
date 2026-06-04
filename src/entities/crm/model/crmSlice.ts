@@ -9,11 +9,13 @@ export type CrmTemplate = {
 export type CrmState = {
   available: { id: string; name: string }[];
   lastIncomingNumber: string | null;
+  activateTick: number;
 };
 
 const initialState: CrmState = {
   available: [],
   lastIncomingNumber: null,
+  activateTick: 0,
 };
 
 export const crmSlice = createSlice({
@@ -25,6 +27,9 @@ export const crmSlice = createSlice({
     },
     setLastIncomingNumber(state, action: PayloadAction<string | null>) {
       state.lastIncomingNumber = action.payload;
+    },
+    requestCrmActivation(state) {
+      state.activateTick += 1;
     },
   },
 });

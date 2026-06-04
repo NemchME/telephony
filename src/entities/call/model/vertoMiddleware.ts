@@ -46,6 +46,19 @@ function readRingtoneFromSettings(getState: () => RootState): Ringtone {
 
 let ringtoneAudio: HTMLAudioElement | null = null;
 
+let ringtonePlayPromise: Promise<void> | null = null;
+
+function hardStopAudio(audio: HTMLAudioElement) {
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+    audio.loop = false;
+    audio.src = '';
+    audio.removeAttribute('src');
+    audio.load();
+  } catch { /* ignore */ }
+}
+
 function startRingtone(getState: () => RootState) {
   stopRingtone();
   try {
@@ -54,18 +67,21 @@ function startRingtone(getState: () => RootState) {
     audio.loop = true;
     audio.volume = 0.8;
     applySinkId(audio);
-    audio.play().catch(() => { /* autoplay policy */ });
     ringtoneAudio = audio;
+    ringtonePlayPromise = audio.play().catch(() => { /* autoplay policy */ });
   } catch { /* ignore */ }
 }
 
 export function stopRingtone() {
-  if (ringtoneAudio) {
-    try {
-      ringtoneAudio.pause();
-      ringtoneAudio.currentTime = 0;
-    } catch { /* ignore */ }
-    ringtoneAudio = null;
+  const audio = ringtoneAudio;
+  const playPromise = ringtonePlayPromise;
+  ringtoneAudio = null;
+  ringtonePlayPromise = null;
+  if (!audio) return;
+
+  hardStopAudio(audio);
+  if (playPromise) {
+    playPromise.then(() => hardStopAudio(audio)).catch(() => hardStopAudio(audio));
   }
 }
 
@@ -276,6 +292,7 @@ export async function answerInboundCall(
   remoteSdp: string,
   dispatch: (a: unknown) => unknown,
 ) {
+  closeIncomingNotification(callID);
   try {
     const { answerSdp } = await createInboundSession(callID, remoteSdp);
     await vertoClient.answer(callID, answerSdp);
@@ -294,6 +311,7 @@ export async function rejectInboundCall(
   dispatch: (a: unknown) => unknown,
   getState?: () => RootState,
 ) {
+  closeIncomingNotification(callID);
   try {
     await vertoClient.bye(callID);
   } catch { /* ignore */ }

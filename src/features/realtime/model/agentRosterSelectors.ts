@@ -50,6 +50,31 @@ const AVAIL_LABELS: Record<string, string> = {
   away: 'Отошёл',
 };
 
+const AVAIL_ORDER: Record<string, number> = {
+  avail: 0,
+  direct: 1,
+  dnd: 2,
+  away: 3,
+};
+
+function compareAgentRows(a: AgentRow, b: AgentRow): number {
+  const aOnline = a.networkStatus === 1 ? 0 : 1;
+  const bOnline = b.networkStatus === 1 ? 0 : 1;
+  if (aOnline !== bOnline) return aOnline - bOnline;
+
+  const aOrder = AVAIL_ORDER[a.availStatus] ?? 99;
+  const bOrder = AVAIL_ORDER[b.availStatus] ?? 99;
+  if (aOrder !== bOrder) return aOrder - bOrder;
+
+  const aTalking = a.busyCount > 0 ? 0 : 1;
+  const bTalking = b.busyCount > 0 ? 0 : 1;
+  if (aTalking !== bTalking) return aTalking - bTalking;
+
+  const aName = (a.displayName || a.username || '').toLowerCase();
+  const bName = (b.displayName || b.username || '').toLowerCase();
+  return aName.localeCompare(bName, 'ru');
+}
+
 function calcPresence(p: {
   networkStatus: number | undefined;
   busyCount: number | undefined;
@@ -177,6 +202,8 @@ export const selectRoster = createSelector(
         if (leftGroup) leftRows.push(row);
         else activeRows.push(row);
       }
+      activeRows.sort(compareAgentRows);
+      leftRows.sort(compareAgentRows);
       for (const r of activeRows) rows.push(r);
       for (const r of leftRows) rows.push(r);
     }

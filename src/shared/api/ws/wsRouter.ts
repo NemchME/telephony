@@ -20,6 +20,7 @@ import {
 
 const wsNotifiedRinging = new Set<string>();
 const wsNotifiedTerminated = new Set<string>();
+const wsCrmActivated = new Set<string>();
 import type { RootState } from '@/app/store/rootReducer';
 
 export type WsRouteCtx = {
@@ -131,7 +132,6 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
           if (import.meta.env.DEV) {
             console.log('[WS] Bundle terminated, removing:', b.id);
           }
-
           for (const s of b.services ?? []) {
             if (s.type !== 'Call') continue;
             if (wsNotifiedRinging.has(s.id)) {
@@ -145,26 +145,22 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
           for (const s of b.services ?? []) {
             if (s.type !== 'Call') continue;
             const calleeUserId = s['callee.userID'] as string | undefined;
-            const callerUserId = s['caller.userID'] as string | undefined;
             const cgpn = s.cgpn || (s['caller.commonNumber'] as string | undefined);
-            const cdpn = s.cdpn || (s['callee.commonNumber'] as string | undefined);
             const isInbound = !!(calleeUserId && myId && calleeUserId === myId);
-            const isOutbound = !!(callerUserId && myId && callerUserId === myId);
-            const isMyCall = isInbound || isOutbound;
 
-
-            if (isMyCall && !TERMINATED_CONN_STATES.has(s.connState ?? '')) {
-              const otherNumber = isInbound ? cgpn : cdpn;
-              if (otherNumber) {
+            if (isInbound && !TERMINATED_CONN_STATES.has(s.connState ?? '')) {
+              if (cgpn) {
                 if (import.meta.env.DEV) {
-                  console.log('[CRM] lastIncomingNumber ←', otherNumber,
-                    '(service', s.id, isInbound ? 'inbound' : 'outbound',
-                    'state', s.connState, ')');
+                  console.log('[CRM] lastIncomingNumber ←', cgpn,
+                    '(service', s.id, 'state', s.connState, ')');
                 }
-                ctx.dispatch(crmActions.setLastIncomingNumber(String(otherNumber)));
+                ctx.dispatch(crmActions.setLastIncomingNumber(String(cgpn)));
+              }
+              if (!wsCrmActivated.has(s.id)) {
+                wsCrmActivated.add(s.id);
+                ctx.dispatch(crmActions.requestCrmActivation());
               }
             }
-
             if (!useVerto && isInbound && s.connState === 'ringing' && !wsNotifiedRinging.has(s.id)) {
               wsNotifiedRinging.add(s.id);
               const name = (s['caller.commonName'] as string | undefined) || '';
@@ -205,7 +201,6 @@ export function routeWsMessage(event: WsEvent, _raw: WsRawMessage, ctx: WsRouteC
         const callerUserId = (r as Record<string, unknown>)['caller.userID'] as string | undefined;
         const callerAuthorized = Boolean((r as Record<string, unknown>)['caller.authorized']);
         const calleeAuthorized = Boolean((r as Record<string, unknown>)['callee.authorized']);
-
         const isIncoming =
           (calleeUserId === myId && callerUserId !== myId) ||
           (!callerAuthorized && calleeAuthorized);

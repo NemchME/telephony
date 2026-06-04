@@ -31,6 +31,7 @@ export function MainPage() {
   const dispatch = useAppDispatch();
   const missedCount = useAppSelector((s) => s.missedCalls.unseenCount);
   const crmList = useAppSelector((s) => s.crm.available);
+  const crmActivateTick = useAppSelector((s) => s.crm.activateTick);
 
   useFaviconSync();
   useMissedCallsTitleSync();
@@ -42,6 +43,12 @@ export function MainPage() {
   useEffect(() => {
     dispatch(bindToUser(userId ?? null));
   }, [userId, dispatch]);
+
+  useEffect(() => {
+    if (crmActivateTick > 0 && crmList.length > 0) {
+      setActiveTab('crm');
+    }
+  }, [crmActivateTick, crmList.length]);
 
   const handleTabChange = (tab: MainTab) => {
     setActiveTab(tab);
