@@ -34,7 +34,7 @@ export function CallHistoryPanel() {
   const currentUserId = useAppSelector(selectUserId);
 
   const filter = useMemo(() => {
-    const now = Math.floor(Date.now() / 1000);
+    const now = Math.floor(new Date().valueOf() / 1000);
     const todayStart = now - 86400 * 30;
     return { begin: todayStart, end: now, limit: rowsPerPage, offset };
   }, [rowsPerPage, offset]);
@@ -165,11 +165,8 @@ export function CallHistoryPanel() {
                           'caller.records': (r as Record<string, unknown>)['caller.records'],
                           'callee.records': (r as Record<string, unknown>)['callee.records'],
                         });
-                      }
-                      // Многие backend'ы хранят запись по bundleID (id «звонка»),
-                      // а не по CDR.id. Берём bundleID если он есть.
-                      const bundleId = (r as { bundleID?: string }).bundleID;
-                      const recId = bundleId || r.id;
+                      }                     
+                      const recId = r.id;
                       return duration > 0 && hasCaller && hasCallee && recId
                         ? <RecordingPlayer cdrId={r.id ?? ''} recordingId={recId} />
                         : '';
