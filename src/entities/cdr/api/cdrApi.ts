@@ -23,6 +23,9 @@ export type CdrSearchArgs = {
   begin: number;
   end: number;
   number?: string;
+  userID?: string;
+  domainID?: string;
+  useServerUserFilter?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -51,17 +54,22 @@ const normalizeCdr = (res: RawCdrResponse): CdrSearchResponse => {
 export const cdrApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     cdrSearch: builder.query<CdrSearchResponse, CdrSearchArgs>({
-      query: (args) => ({
-        method: "CDR.Search",
-        filter: {
+      query: (args) => {
+        const sendServerUserFilter = args.useServerUserFilter === true;
+        const filter = {
           begin: args.begin,
           end: args.end,
-          number: args.number,
+          ...(sendServerUserFilter && args.userID != null ? { userID: args.userID } : {}),
+          ...(sendServerUserFilter && args.domainID != null ? { domainID: args.domainID } : {}),
           limit: args.limit ?? 50,
           offset: args.offset ?? 0,
           sort: "desc",
-        },
-      }),
+        };
+        if (import.meta.env.DEV) {
+          console.log('[CDR.Search] filter →', filter);
+        }
+        return { method: "CDR.Search", filter };
+      },
       transformResponse: (res: unknown) => normalizeCdr(res as RawCdrResponse),
     }),
   }),

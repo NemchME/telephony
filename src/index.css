@@ -567,8 +567,9 @@ a:hover {
 }
 .sidebar__group {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--color-border-light);
   cursor: grab;
@@ -583,6 +584,11 @@ a:hover {
   background: var(--bg-drag-over);
   border-left: 3px solid var(--color-btn-primary);
   padding-left: 9px;
+}
+.sidebar__group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .sidebar__group-name {
   white-space: nowrap;
@@ -601,6 +607,50 @@ a:hover {
   min-width: 18px;
   text-align: center;
   line-height: 1.4;
+}
+
+.sidebar__queue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.sidebar__queue-table td {
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar__queue-cell-number {
+  font-weight: 600;
+}
+.sidebar__queue-cell-time {
+  color: var(--color-text-light, #777);
+  font-variant-numeric: tabular-nums;
+}
+.sidebar__queue-cell-name {
+  max-width: 90px;
+}
+.sidebar__queue-cell-action {
+  width: 18px;
+  text-align: right;
+}
+.sidebar__queue-row--blocked {
+  background: #d9d9d9;
+  color: #666;
+}
+.sidebar__queue-dequeue {
+  border: none;
+  background: transparent;
+  color: var(--color-dnd, #e74c3c);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.sidebar__queue-dequeue:hover {
+  color: #b02a1f;
 }
 
 .main-content {

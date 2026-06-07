@@ -37,6 +37,20 @@ const slice = createSlice({
       state.order = next;
       save(state.order);
     },
+
+    moveGroupById(state, a: PayloadAction<{ draggedId: string; targetId: string }>) {
+      const { draggedId, targetId } = a.payload;
+      if (draggedId === targetId) return;
+      const next = state.order.slice();
+      const from = next.indexOf(draggedId);
+      const to = next.indexOf(targetId);
+      if (from < 0 || to < 0) return;
+      const [item] = next.splice(from, 1);
+      if (item == null) return;
+      next.splice(to, 0, item);
+      state.order = next;
+      save(state.order);
+    },
     ensureContains(state, a: PayloadAction<string[]>) {
       const set = new Set(state.order);
       const missing = a.payload.filter((id) => !set.has(id));

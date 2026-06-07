@@ -18,7 +18,14 @@ export type CallGroupAgentState = {
   lastModifiedStatus?: number;
   domainID?: string;
 };
-export type CallGroupState = { id: string; domainID?: string; queue?: unknown[] };
+export type QueueItem = {
+  id: string;
+  cidNumber?: string;
+  cidName?: string;
+  enqueuedTimeSec?: number;
+  blocked?: boolean;
+};
+export type CallGroupState = { id: string; domainID?: string; queue?: QueueItem[] };
 
 export type CallGroupSliceState = {
   items: CallGroup[];

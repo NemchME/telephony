@@ -69,6 +69,11 @@ export const rpcMethods = {
     params: { userID },
   }),
 
+  cmdCallgroupDequeue: (id: string): RpcRequest => ({
+    method: 'Cmd.CallgroupDequeue',
+    params: { id },
+  }),
+
   callTransfer: (callId: string, destination: string): RpcRequest => ({
     method: 'Call.Transfer',
     filter: { id: callId },
