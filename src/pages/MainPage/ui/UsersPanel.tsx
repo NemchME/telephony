@@ -44,8 +44,18 @@ export function UsersPanel() {
     return true;
   });
 
+  const visibleGroupIds = filteredRoster
+    .filter((row): row is GroupHeaderRow => row.kind === 'group')
+    .map((row) => row.groupId);
+
   const { onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, dragOverIndex } = useDragReorder(
-    (from, to) => dispatch(groupOrderActions.moveGroup({ from, to })),
+    (from, to) => {
+      const draggedId = visibleGroupIds[from];
+      const targetId = visibleGroupIds[to];
+      if (draggedId && targetId) {
+        dispatch(groupOrderActions.moveGroupById({ draggedId, targetId }));
+      }
+    },
   );
 
   let currentGroupDragIndex = -1;
@@ -267,7 +277,7 @@ function AgentRowItem({
   const busyLabel = row.busyCount > 0 ? 'Разг.' : 'Не разг.';
   const [resetUserState] = useResetUserStateMutation();
 
-  const isWebClientActive = row.networkStatus === 1;
+  const isWebClientActive = !!(row.busyStatus && row.busyStatus !== '_');
 
   const statusLabel = getUserStatusLabel(row.availStatus, row.busyStatus);
 

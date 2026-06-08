@@ -30,10 +30,18 @@ export type CallGroupAgentState = {
   domainID?: string;
 };
 
+export type QueueItem = {
+  id: string;
+  cidNumber?: string;
+  cidName?: string;
+  enqueuedTimeSec?: number;
+  blocked?: boolean;
+};
+
 export type CallGroupState = {
   id: string;
   domainID?: string;
-  queue?: unknown[];
+  queue?: QueueItem[];
 };
 
 export type ListResponse<T> = { elements: T[] };
@@ -65,6 +73,10 @@ export const callGroupApi = apiSlice.injectEndpoints({
       query: ({ userID }) => rpcMethods.cmdResetUserState(userID),
     }),
 
+    callgroupDequeue: build.mutation<unknown, { id: string }>({
+      query: ({ id }) => rpcMethods.cmdCallgroupDequeue(id),
+    }),
+
     updateAgentStatus: build.mutation<unknown, { callGroupID: string; userID: string; status: number }>({
       query: ({ callGroupID, userID, status }) => rpcMethods.callGroupAgentUpdate(callGroupID, userID, status),
     }),
@@ -79,4 +91,5 @@ export const {
   useResetAgentStateMutation,
   useResetUserStateMutation,
   useUpdateAgentStatusMutation,
+  useCallgroupDequeueMutation,
 } = callGroupApi;
