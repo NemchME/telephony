@@ -23,9 +23,9 @@ export type CdrSearchArgs = {
   begin: number;
   end: number;
   number?: string;
+
   userID?: string;
   domainID?: string;
-  useServerUserFilter?: boolean;
   limit?: number;
   offset?: number;
 };
@@ -55,12 +55,11 @@ export const cdrApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     cdrSearch: builder.query<CdrSearchResponse, CdrSearchArgs>({
       query: (args) => {
-        const sendServerUserFilter = args.useServerUserFilter === true;
         const filter = {
           begin: args.begin,
           end: args.end,
-          ...(sendServerUserFilter && args.userID != null ? { userID: args.userID } : {}),
-          ...(sendServerUserFilter && args.domainID != null ? { domainID: args.domainID } : {}),
+          ...(args.userID != null ? { userID: args.userID } : {}),
+          ...(args.domainID != null ? { domainID: args.domainID } : {}),
           limit: args.limit ?? 50,
           offset: args.offset ?? 0,
           sort: "desc",

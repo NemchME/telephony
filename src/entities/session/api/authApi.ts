@@ -22,6 +22,7 @@ export type LoginResponse = {
       availStatus?: string;
       dod?: string;
       crmList?: string[];
+      domainID?: string;
     };
     sessionID: string;
     vertoUrl?: string;

@@ -32,16 +32,25 @@ export function CallHistoryPanel() {
   const [offset, setOffset] = useState(0);
   const [quickDial, setQuickDial] = useState<{ number: string; name: string } | null>(null);
   const currentUserId = useAppSelector(selectUserId);
+  const myDomainId = useAppSelector((s) => s.session.user?.domainID);
 
   const filter = useMemo(() => {
-    const now = Math.floor(new Date().valueOf() / 1000);
+    const now = Math.floor(Date.now() / 1000);
     const todayStart = now - 86400 * 30;
-    return { begin: todayStart, end: now, limit: rowsPerPage, offset };
-  }, [rowsPerPage, offset]);
+    return {
+      begin: todayStart,
+      end: now,
+      limit: rowsPerPage,
+      offset,
+      ...(currentUserId != null ? { userID: currentUserId } : {}),
+      ...(myDomainId != null ? { domainID: myDomainId } : {}),
+    };
+  }, [rowsPerPage, offset, currentUserId, myDomainId]);
 
   const { data, isFetching } = useCdrSearchQuery(filter);
 
   const records = data?.elements ?? [];
+
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / rowsPerPage));
   const currentPage = Math.floor(offset / rowsPerPage) + 1;
@@ -123,7 +132,6 @@ export function CallHistoryPanel() {
               const login = isOutgoing
                 ? (r['callee.userName'] as string | undefined) || ''
                 : (r['caller.userName'] as string | undefined) || '';
-              // dialTarget — что отправлять в звонок: если есть number, иначе логин
               const dialTarget = number || login;
 
               return (
@@ -151,24 +159,12 @@ export function CallHistoryPanel() {
                   <td>{duration > 0 ? formatElapsed(duration) : ''}</td>
                   <td>
                     {(() => {
-                      // Поля записей могут приходить либо с camelCase, либо с
-                      // точечной нотацией — пробуем оба варианта.
                       const callerRec = (r.callerRecords ?? (r as Record<string, unknown>)['caller.records']) as unknown;
                       const calleeRec = (r.calleeRecords ?? (r as Record<string, unknown>)['callee.records']) as unknown;
                       const hasCaller = Array.isArray(callerRec) && callerRec.length > 0;
                       const hasCallee = Array.isArray(calleeRec) && calleeRec.length > 0;
-                      if (import.meta.env.DEV && r.id && duration > 0 && (!hasCaller || !hasCallee)) {
-                        // помогает понять, как сервер называет поля
-                        console.debug('[CDR] no records for', r.id, {
-                          callerRecords: r.callerRecords,
-                          calleeRecords: r.calleeRecords,
-                          'caller.records': (r as Record<string, unknown>)['caller.records'],
-                          'callee.records': (r as Record<string, unknown>)['callee.records'],
-                        });
-                      }                     
-                      const recId = r.id;
-                      return duration > 0 && hasCaller && hasCallee && recId
-                        ? <RecordingPlayer cdrId={r.id ?? ''} recordingId={recId} />
+                      return duration > 0 && hasCaller && hasCallee && r.id
+                        ? <RecordingPlayer cdrId={r.id} />
                         : '';
                     })()}
                   </td>
