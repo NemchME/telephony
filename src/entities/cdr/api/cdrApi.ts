@@ -24,7 +24,7 @@ export type CdrSearchArgs = {
   end: number;
   number?: string;
 
-  userID?: string;
+  userName?: string;
   domainID?: string;
   limit?: number;
   offset?: number;
@@ -58,7 +58,7 @@ export const cdrApi = apiSlice.injectEndpoints({
         const filter = {
           begin: args.begin,
           end: args.end,
-          ...(args.userID != null ? { userID: args.userID } : {}),
+          ...(args.userName != null ? { userName: args.userName } : {}),
           ...(args.domainID != null ? { domainID: args.domainID } : {}),
           limit: args.limit ?? 50,
           offset: args.offset ?? 0,

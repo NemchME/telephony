@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useCdrSearchQuery, type CdrRow } from '@/entities/cdr/api/cdrApi';
 import { formatDateTime, formatElapsed } from '@/shared/lib/format/time';
 import { useAppSelector } from '@/app/store/hooks';
-import { selectUserId } from '@/entities/session/model/sessionSelectors';
+import { selectUserId, selectUserName } from '@/entities/session/model/sessionSelectors';
 import { QuickDialDialog } from './QuickDialDialog';
 import { RecordingPlayer } from './RecordingPlayer';
 
@@ -32,20 +32,21 @@ export function CallHistoryPanel() {
   const [offset, setOffset] = useState(0);
   const [quickDial, setQuickDial] = useState<{ number: string; name: string } | null>(null);
   const currentUserId = useAppSelector(selectUserId);
+  const currentUserName = useAppSelector(selectUserName);
   const myDomainId = useAppSelector((s) => s.session.user?.domainID);
 
   const filter = useMemo(() => {
-    const now = Math.floor(Date.now() / 1000);
+    const now = Math.floor((new Date()).valueOf() / 1000);
     const todayStart = now - 86400 * 30;
     return {
       begin: todayStart,
       end: now,
       limit: rowsPerPage,
       offset,
-      ...(currentUserId != null ? { userID: currentUserId } : {}),
+      ...(currentUserName != null ? { userName: currentUserName } : {}),
       ...(myDomainId != null ? { domainID: myDomainId } : {}),
     };
-  }, [rowsPerPage, offset, currentUserId, myDomainId]);
+  }, [rowsPerPage, offset, currentUserName, myDomainId]);
 
   const { data, isFetching } = useCdrSearchQuery(filter);
 
