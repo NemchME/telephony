@@ -31,6 +31,7 @@ export function CallQueueSidebar() {
   const queueMap = new Map(groupStates.map((gs) => [gs.id, (gs.queue ?? []) as QueueItem[]]));
   const groupMap = new Map(groups.map((g) => [g.id, g]));
 
+
   const orderedIds = [...groupOrder];
   for (const g of groups) {
     if (!orderedIds.includes(g.id)) orderedIds.push(g.id);
@@ -78,7 +79,9 @@ export function CallQueueSidebar() {
           >
             <div className="sidebar__group-header">
               <img src="/icons/group.svg" alt="" className="group-icon" />
-              <span className="sidebar__group-name">{g.commonName ?? g.name}</span>
+              <span className="sidebar__group-name" title={g.commonName ?? g.name}>
+                {g.commonName ?? g.name}
+              </span>
               {qLen > 0 && <span className="sidebar__queue-badge">{qLen}</span>}
             </div>
 
