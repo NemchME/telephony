@@ -3,6 +3,8 @@ import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectAvailStatus, selectUserId } from '@/entities/session/model/sessionSelectors';
 import { setAvailStatus } from '@/entities/session/model/sessionSlice';
 import { useUpdateMyAvailStatusMutation } from '@/entities/user/api/userApi';
+import { selectMagicRules } from '@/features/magicRules/model/selectMagicRules';
+import { getForbiddenStatuses } from '@/features/magicRules/lib/magicRules';
 
 const STATUSES = [
   { value: 'avail_avail', dot: 'online', label: 'Нормальное' },
@@ -57,6 +59,13 @@ export function StatusDropdown() {
   const userId = useAppSelector(selectUserId);
   const [updateStatus] = useUpdateMyAvailStatusMutation();
 
+  const magicRules = useAppSelector(selectMagicRules);
+  const myManageTags = useAppSelector((s) =>
+    userId ? s.user.entities[userId]?.manageTags : undefined,
+  );
+  const forbiddenAvail = getForbiddenStatuses(myManageTags, magicRules);
+  const isAllowed = (value: string) => !forbiddenAvail.includes(parseCompoundStatus(value).avail);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -87,7 +96,7 @@ export function StatusDropdown() {
       </div>
       {open && (
         <div className="status-dropdown__menu">
-          {STATUSES.map((s) => (
+          {STATUSES.filter((s) => isAllowed(s.value)).map((s) => (
             <div
               key={s.value}
               className={`status-dropdown__item ${isActive(s.value) ? 'status-dropdown__item--active' : ''}`}
@@ -99,7 +108,7 @@ export function StatusDropdown() {
             </div>
           ))}
           <div className="status-dropdown__separator">Дополнительные статусы</div>
-          {EXTRA_STATUSES.map((s) => (
+          {EXTRA_STATUSES.filter((s) => isAllowed(s.value)).map((s) => (
             <div
               key={s.value}
               className={`status-dropdown__item ${isActive(s.value) ? 'status-dropdown__item--active' : ''}`}

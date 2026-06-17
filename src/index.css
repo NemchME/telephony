@@ -8,7 +8,7 @@
 
 :root {
   --font-family: -apple-system, 'Segoe UI', Tahoma, Arial, Helvetica, sans-serif;
-  --font-size: 12px;
+  --font-size: 14px;
 
   --bg-body: #e4e7ec;
   --bg-white: #fff;
@@ -97,7 +97,7 @@ a:hover {
 .cc-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 11px;
+  font-size: 13px;
   table-layout: auto;
 }
 .cc-table th {
@@ -108,7 +108,7 @@ a:hover {
   border: 1px solid #4a5a85;
   text-align: left;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.02em;
 }
 .cc-table td {
@@ -147,7 +147,7 @@ a:hover {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: #f5f7fa;
-  font-size: 10px;
+  font-size: 12px;
   margin: 1px 2px;
   white-space: nowrap;
   color: var(--color-text);
@@ -182,7 +182,7 @@ a:hover {
   border: 1px solid var(--color-border);
   border-bottom: none;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  font-size: 12px;
+  font-size: 14px;
   user-select: none;
   color: var(--color-text);
   transition: background 0.15s, color 0.15s;
@@ -235,14 +235,14 @@ a:hover {
   50% { opacity: 0.3; }
 }
 .header__title {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
   margin-right: 8px;
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
 .header__user-info {
-  font-size: 12px;
+  font-size: 14px;
   color: #7bed9f;
   font-weight: 600;
   white-space: nowrap;
@@ -270,7 +270,7 @@ a:hover {
 }
 .header__suggestion-item {
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
@@ -285,7 +285,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255,255,255,0.7);
   font-style: italic;
   padding: 4px 8px;
@@ -301,7 +301,7 @@ a:hover {
   padding: 5px 8px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 14px;
   font-family: var(--font-family);
   background: rgba(255,255,255,0.15);
   color: #fff;
@@ -321,7 +321,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -340,7 +340,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -362,7 +362,7 @@ a:hover {
   border-radius: var(--radius-sm);
   background: #2a2a3a;
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   outline: none;
   margin-right: 4px;
 }
@@ -379,7 +379,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -399,7 +399,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -415,7 +415,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -424,19 +424,19 @@ a:hover {
   background: #c0392b;
 }
 .header__call-info {
-  font-size: 12px;
+  font-size: 14px;
   color: #fff;
   white-space: nowrap;
   padding: 0 6px;
   animation: fade-in 0.2s;
 }
 .header__verto-status {
-  font-size: 10px;
+  font-size: 12px;
   margin-right: 4px;
   cursor: default;
 }
 .header__call-error {
-  font-size: 11px;
+  font-size: 13px;
   color: #ff6b6b;
   white-space: nowrap;
   animation: fade-in 0.2s;
@@ -449,7 +449,7 @@ a:hover {
   animation: incoming-pulse 1.5s infinite;
 }
 .header__incoming-text {
-  font-size: 12px;
+  font-size: 14px;
   color: #fff;
   font-weight: 600;
   white-space: nowrap;
@@ -461,7 +461,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -476,7 +476,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
@@ -502,7 +502,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 17px;
   border-radius: var(--radius-sm);
   transition: background 0.15s;
 }
@@ -523,7 +523,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
   font-weight: 600;
   transition: background 0.12s;
@@ -537,7 +537,7 @@ a:hover {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
   font-weight: 600;
   transition: background 0.12s;
@@ -556,7 +556,7 @@ a:hover {
   flex-shrink: 0;
 }
 .sidebar__title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   padding: 10px 12px 8px;
   color: var(--color-text);
@@ -573,7 +573,7 @@ a:hover {
   border-bottom: 1px solid var(--color-border-light);
   cursor: grab;
   user-select: none;
-  font-size: 12px;
+  font-size: 14px;
   transition: background 0.12s;
 }
 .sidebar__group:hover {
@@ -599,7 +599,7 @@ a:hover {
   margin-left: auto;
   background: var(--color-busy);
   color: #fff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 8px;
@@ -611,7 +611,7 @@ a:hover {
 .sidebar__queue-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 13px;
   margin-left: 4px;
 }
 .sidebar__queue-table td {
@@ -644,7 +644,7 @@ a:hover {
   background: transparent;
   color: var(--color-dnd, #e74c3c);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
   padding: 0 2px;
 }
@@ -683,14 +683,14 @@ a:hover {
   border-bottom: 1px solid var(--color-border-light);
 }
 .users-panel__title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
 }
 
 .dropdown-btn {
   padding: 3px 10px;
-  font-size: 11px;
+  font-size: 13px;
   border: 1px solid var(--color-border);
   background: var(--bg-white);
   cursor: pointer;
@@ -748,13 +748,12 @@ a:hover {
   color: var(--color-link);
 }
 .user-list__group strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .roster-table {
-  display: grid;
-  grid-template-columns:
+  --roster-cols:
     18px
     32px
     minmax(100px, 1.4fr)
@@ -766,6 +765,8 @@ a:hover {
     max-content
     max-content
     auto;
+  display: grid;
+  grid-template-columns: var(--roster-cols);
   gap: 0;
 }
 .user-list__agent {
@@ -779,15 +780,21 @@ a:hover {
   border-right: 1px solid var(--color-border-light);
   border-bottom: 1px solid var(--color-border-light);
   background: var(--bg-white);
-  font-size: 11px;
+  font-size: 13px;
   transition: background 0.1s;
   min-height: 26px;
+}
+
+@supports not (grid-template-columns: subgrid) {
+  .user-list__agent {
+    grid-template-columns: var(--roster-cols);
+  }
 }
 .user-list__group {
   grid-column: 1 / -1;
 }
 .roster-table--no-duration {
-  grid-template-columns:
+  --roster-cols:
     18px
     32px
     minmax(120px, 1.6fr)
@@ -796,10 +803,11 @@ a:hover {
     minmax(90px, 120px)
     minmax(58px, 75px)
     auto;
+  grid-template-columns: var(--roster-cols);
 }
 @media (max-width: 1280px) {
   .roster-table {
-    grid-template-columns:
+    --roster-cols:
       18px
       32px
       minmax(90px, 1.3fr)
@@ -811,13 +819,14 @@ a:hover {
       max-content
       max-content
       auto;
-    font-size: 10px;
+    grid-template-columns: var(--roster-cols);
+    font-size: 12px;
   }
 }
 
 @media (max-width: 1024px) {
   .roster-table {
-    grid-template-columns:
+    --roster-cols:
       18px
       32px
       minmax(80px, 1.2fr)
@@ -828,6 +837,7 @@ a:hover {
       minmax(52px, 64px)
       max-content
       auto;
+    grid-template-columns: var(--roster-cols);
   }
   .user-list__col--time--group {
     display: none;
@@ -836,7 +846,7 @@ a:hover {
 
 @media (max-width: 860px) {
   .roster-table {
-    grid-template-columns:
+    --roster-cols:
       18px
       32px
       minmax(72px, 1.2fr)
@@ -846,6 +856,7 @@ a:hover {
       max-content
       minmax(52px, 64px)
       auto;
+    grid-template-columns: var(--roster-cols);
   }
   .user-list__col--time--busy {
     display: none;
@@ -854,7 +865,7 @@ a:hover {
 
 @media (max-width: 680px) {
   .roster-table {
-    grid-template-columns:
+    --roster-cols:
       18px
       32px
       minmax(80px, 1.4fr)
@@ -862,6 +873,7 @@ a:hover {
       minmax(60px, 80px)
       minmax(52px, 64px)
       auto;
+    grid-template-columns: var(--roster-cols);
   }
   .user-list__col--time--avail,
   .user-list__col--username {
@@ -945,7 +957,7 @@ a:hover {
 .user-list__col--icon {
   width: 18px;
   text-align: center;
-  font-size: 11px;
+  font-size: 13px;
 }
 .user-list__agent-name {
   white-space: nowrap;
@@ -970,7 +982,7 @@ a:hover {
   background: var(--bg-white);
   border-radius: var(--radius-sm);
   padding: 1px 5px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text-light);
   transition: all 0.12s;
   line-height: 1;
@@ -995,7 +1007,7 @@ a:hover {
   background: rgba(255,255,255,0.15);
   color: rgba(255,255,255,0.9);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   white-space: nowrap;
   transition: background 0.15s;
 }
@@ -1022,7 +1034,7 @@ a:hover {
 .status-dropdown__item {
   padding: 6px 14px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1038,7 +1050,7 @@ a:hover {
 }
 .status-dropdown__separator {
   padding: 6px 14px 4px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1063,7 +1075,7 @@ a:hover {
   box-shadow: var(--shadow-lg);
 }
 .login-box h2 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 20px;
   text-align: center;
@@ -1075,7 +1087,7 @@ a:hover {
 .form-field label {
   display: block;
   margin-bottom: 5px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--color-text);
 }
@@ -1084,7 +1096,7 @@ a:hover {
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 15px;
   font-family: var(--font-family);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -1098,7 +1110,7 @@ a:hover {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text);
 }
 .form-field--checkbox input[type="checkbox"] {
@@ -1112,7 +1124,7 @@ a:hover {
   color: white;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   margin-top: 6px;
@@ -1131,7 +1143,7 @@ a:hover {
   color: #b91c1c;
   padding: 8px 12px;
   margin-bottom: 14px;
-  font-size: 12px;
+  font-size: 14px;
   border-radius: var(--radius-sm);
 }
 .dev-btn {
@@ -1142,7 +1154,7 @@ a:hover {
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-text-light);
   transition: all 0.12s;
 }
@@ -1170,7 +1182,7 @@ a:hover {
 }
 
 .call-redirect-info {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-direct, #8000ff);
   line-height: 1.2;
   margin-top: 1px;
@@ -1178,7 +1190,7 @@ a:hover {
 .call-redirect-info__arrow {
   display: inline-block;
   transform: rotate(-90deg);
-  font-size: 12px;
+  font-size: 14px;
   vertical-align: -1px;
 }
 
@@ -1194,7 +1206,7 @@ a:hover {
   background: var(--color-dnd, #e74c3c);
   color: #fff;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 18px;
   text-align: center;
   font-weight: 700;
@@ -1206,7 +1218,7 @@ a:hover {
   align-items: center;
   gap: 8px;
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text);
 }
 .pagination button {
@@ -1214,7 +1226,7 @@ a:hover {
   border: 1px solid var(--color-border);
   background: var(--bg-white);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: var(--radius-sm);
   font-weight: 500;
   transition: all 0.12s;
@@ -1230,7 +1242,7 @@ a:hover {
 }
 .pagination select {
   padding: 3px 6px;
-  font-size: 11px;
+  font-size: 13px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--bg-white);
@@ -1241,7 +1253,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-text-light);
   gap: 8px;
 }
@@ -1259,7 +1271,7 @@ a:hover {
 }
 
 .call-history__header {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   margin-bottom: 8px;
   color: var(--color-text);
@@ -1289,7 +1301,7 @@ a:hover {
   gap: 6px;
   padding: 5px 12px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--color-text);
   transition: background 0.1s;
   user-select: none;
@@ -1303,7 +1315,7 @@ a:hover {
 }
 .dropdown-menu__action {
   padding: 5px 12px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-link);
   cursor: pointer;
   border-top: 1px solid var(--color-border-light);
@@ -1315,7 +1327,7 @@ a:hover {
 }
 
 .web-client-icon {
-  font-size: 12px;
+  font-size: 14px;
   flex-shrink: 0;
   margin-right: 2px;
 }
@@ -1358,14 +1370,14 @@ a:hover {
   border-bottom: 1px solid var(--color-border-light);
 }
 .modal-dialog__title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
 }
 .modal-dialog__close {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
   color: var(--color-text-light);
   padding: 2px 6px;
@@ -1392,14 +1404,14 @@ a:hover {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .quick-dial-dialog {
   min-width: 280px;
 }
 .quick-dial-dialog__number {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   text-align: center;
   padding: 8px 0 14px;
@@ -1415,7 +1427,7 @@ a:hover {
   border: 1px solid var(--color-border);
   background: var(--bg-white);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   border-radius: var(--radius-sm);
   transition: all 0.12s;
@@ -1447,7 +1459,7 @@ a:hover {
   margin-bottom: 14px;
 }
 .settings-section__title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   margin-bottom: 8px;
   color: var(--color-text);
@@ -1470,7 +1482,7 @@ a:hover {
   gap: 6px;
   padding: 3px 6px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   border-radius: var(--radius-sm);
   transition: background 0.1s;
 }
@@ -1485,7 +1497,7 @@ a:hover {
   background: none;
   border: 1px solid var(--color-border);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   padding: 1px 6px;
   border-radius: var(--radius-sm);
   color: var(--color-text-light);
@@ -1499,7 +1511,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   padding: 4px 0;
 }
@@ -1518,7 +1530,7 @@ a:hover {
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
-  font-size: 12px;
+  font-size: 14px;
   cursor: default;
   border: 1px solid var(--color-border-light);
   border-radius: var(--radius-sm);
@@ -1532,7 +1544,7 @@ a:hover {
 }
 .user-groups-note {
   margin-top: 10px;
-  font-size: 11px;
+  font-size: 13px;
   color: var(--color-text-muted);
   font-style: italic;
 }

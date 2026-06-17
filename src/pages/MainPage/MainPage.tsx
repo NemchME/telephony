@@ -14,6 +14,7 @@ import { CrmPanel } from './ui/CrmPanel';
 import { useFaviconSync } from '@/shared/lib/favicon/useFaviconSync';
 import { useMissedCallsTitleSync } from '@/shared/lib/title/useMissedCallsTitleSync';
 import { ensureNotificationPermission } from '@/shared/lib/notifications/notifications';
+import { useSessionKeepalive } from '@/shared/lib/session/useSessionKeepalive';
 
 function sendBusyStatusReset(userId: string) {
   const body = JSON.stringify({
@@ -35,6 +36,7 @@ export function MainPage() {
 
   useFaviconSync();
   useMissedCallsTitleSync();
+  useSessionKeepalive();
 
   useEffect(() => {
     if (userId) void ensureNotificationPermission();
