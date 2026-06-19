@@ -20,6 +20,7 @@ export type LoginResponse = {
       numbers?: string[];
       adminStatus?: number;
       availStatus?: string;
+      busyStatus?: string;
       dod?: string;
       crmList?: string[];
       domainID?: string;
@@ -39,6 +40,14 @@ export const authApi = apiSlice.injectEndpoints({
         const u = data.data.user;
 
         const userId = data.data.userID ?? u?.id;
+        let compoundStatus: string | undefined;
+        if (u?.availStatus != null) {
+          const avail = u.availStatus;
+          const busy = u.busyStatus;
+          compoundStatus =
+            busy && busy !== '_' && busy !== avail ? `${avail}_${busy}` : `${avail}_${avail}`;
+        }
+
         dispatch(
           setSession({
             sessionID: data.data.sessionID,
@@ -46,7 +55,7 @@ export const authApi = apiSlice.injectEndpoints({
             ...(userId != null ? { userId } : {}),
             ...(u?.commonName != null ? { userCommonName: u.commonName } : {}),
             userNumbers: u?.numbers ?? [],
-            ...(u?.availStatus != null ? { availStatus: u.availStatus } : {}),
+            ...(compoundStatus != null ? { availStatus: compoundStatus } : {}),
             vertoUrl: data.data.vertoUrl ?? null,
             user: u ? (u as SessionUser) : null,
             useVerto: arg.useVerto ?? true,
