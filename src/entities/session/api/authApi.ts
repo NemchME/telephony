@@ -40,10 +40,16 @@ export const authApi = apiSlice.injectEndpoints({
         const u = data.data.user;
 
         const userId = data.data.userID ?? u?.id;
+
+        let normalizedUser = u;
+        if (u && u.availStatus != null && (!u.busyStatus || u.busyStatus === '_')) {
+          normalizedUser = { ...u, busyStatus: u.availStatus };
+        }
+
         let compoundStatus: string | undefined;
-        if (u?.availStatus != null) {
-          const avail = u.availStatus;
-          const busy = u.busyStatus;
+        if (normalizedUser?.availStatus != null) {
+          const avail = normalizedUser.availStatus;
+          const busy = normalizedUser.busyStatus;
           compoundStatus =
             busy && busy !== '_' && busy !== avail ? `${avail}_${busy}` : `${avail}_${avail}`;
         }
@@ -53,11 +59,11 @@ export const authApi = apiSlice.injectEndpoints({
             sessionID: data.data.sessionID,
             userName: data.data.userName,
             ...(userId != null ? { userId } : {}),
-            ...(u?.commonName != null ? { userCommonName: u.commonName } : {}),
-            userNumbers: u?.numbers ?? [],
+            ...(normalizedUser?.commonName != null ? { userCommonName: normalizedUser.commonName } : {}),
+            userNumbers: normalizedUser?.numbers ?? [],
             ...(compoundStatus != null ? { availStatus: compoundStatus } : {}),
             vertoUrl: data.data.vertoUrl ?? null,
-            user: u ? (u as SessionUser) : null,
+            user: normalizedUser ? (normalizedUser as SessionUser) : null,
             useVerto: arg.useVerto ?? true,
           }),
         );

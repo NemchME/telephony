@@ -7,6 +7,7 @@ export type SessionUser = {
   numbers?: string[];
   adminStatus?: number;
   availStatus?: string;
+  busyStatus?: string;
   dod?: string;
   crmList?: string[];
   domainID?: string;
