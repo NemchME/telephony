@@ -13,9 +13,11 @@ import {
 } from '@/entities/callGroup/model/callGroupSlice';
 import { bundleActions } from '@/entities/bundle/model/bundleSlice';
 import { groupOrderActions } from '@/features/realtime/model/groupOrderSlice';
+import { viewSettingsActions } from '@/features/realtime/model/viewSettingsSlice';
 import { loadCrmTemplates } from '@/shared/api/crm/loadCrmTemplates';
 import { crmActions, setCrmTemplates } from '@/entities/crm/model/crmSlice';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
+import { parseUserSettings } from '@/entities/userSettings/model/userSettings';
 
 export function useBootstrap() {
   const dispatch = useAppDispatch();
@@ -26,6 +28,7 @@ export function useBootstrap() {
 
   useEffect(() => {
     if (!isAuthed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setBooted(false);
       return;
     }
@@ -58,10 +61,22 @@ export function useBootstrap() {
         const bundles = bundlesRes?.elements ?? [];
         dispatch(bundleActions.setAll(bundles));
 
-        dispatch(groupOrderActions.ensureContains((groupsRes?.elements ?? []).map((g: { id: string }) => g.id)));
-
+        
         const allUsers = usersRes?.elements ?? [];
         const meFromSearch = userId ? allUsers.find((u) => u.id === userId) : undefined;
+
+        const meSettings = parseUserSettings(
+          (meFromSearch as { settings?: string } | undefined)?.settings ??
+            (sessionUser as { settings?: string } | null)?.settings,
+        );
+        if (Array.isArray(meSettings.groupOrder) && meSettings.groupOrder.length > 0) {
+          dispatch(groupOrderActions.setGroupOrder(meSettings.groupOrder));
+        }
+        if (meSettings.viewSettings) {
+          dispatch(viewSettingsActions.hydrate(meSettings.viewSettings));
+        }
+
+        dispatch(groupOrderActions.ensureContains((groupsRes?.elements ?? []).map((g: { id: string }) => g.id)));
         const userCrms =
           (meFromSearch as { crmList?: string[] } | undefined)?.crmList ??
           sessionUser?.crmList;
@@ -75,6 +90,7 @@ export function useBootstrap() {
           .then((templates) => {
             if (cancelled) return;
             setCrmTemplates(templates);
+
             const allowedIds = Array.isArray(userCrms) ? userCrms.map((x) => String(x)) : [];
             const available = allowedIds
               .filter((id) => templates[id])
@@ -98,7 +114,7 @@ export function useBootstrap() {
 
     boot();
     return () => { cancelled = true; };
-  }, [isAuthed, dispatch]);
+  }, [isAuthed, dispatch, userId, sessionUser]);
 
   return booted;
 }

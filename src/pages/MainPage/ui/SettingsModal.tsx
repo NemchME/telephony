@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAppSelector } from '@/app/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
-import { useUpdateUserSettingsMutation } from '@/entities/user/api/userApi';
 import { selectUserEntities } from '@/entities/user/model/userSelectors';
 import { useResetUserStateMutation } from '@/entities/callGroup/api/callGroupApi';
+import { saveUserSettings } from '@/entities/userSettings/model/userSettings';
 import {
   getInputDeviceId,
   setInputDeviceId,
@@ -66,7 +66,7 @@ export function SettingsModal({ onClose }: Props) {
   const userEntities = useAppSelector(selectUserEntities);
   const user = userId ? userEntities[userId] : undefined;
   const serverSettings = parseServerSettings(user?.settings);
-  const [updateSettings] = useUpdateUserSettingsMutation();
+  const dispatch = useAppDispatch();
   const [resetUserState] = useResetUserStateMutation();
 
   const initialRingtone = serverSettings.ringtone && (RINGTONES as readonly string[]).includes(serverSettings.ringtone)
@@ -113,8 +113,7 @@ export function SettingsModal({ onClose }: Props) {
 
   const saveToServer = (newRingtone: string, newEndCallSound: boolean) => {
     if (!userId) return;
-    const json: ServerSettings = { ringtone: newRingtone, endCallSound: newEndCallSound };
-    updateSettings({ userId, settings: JSON.stringify(json) });
+    dispatch(saveUserSettings({ ringtone: newRingtone, endCallSound: newEndCallSound }));
   };
 
   const handleRingtoneChange = (name: string) => {

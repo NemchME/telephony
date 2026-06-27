@@ -60,6 +60,15 @@ const slice = createSlice({
       state.hiddenGroups = [];
       save(state);
     },
+    hydrate(state, action: PayloadAction<Partial<ViewSettings>>) {
+      const p = action.payload;
+      if (typeof p.hideInactive === 'boolean') state.hideInactive = p.hideInactive;
+      if (typeof p.showDuration === 'boolean') state.showDuration = p.showDuration;
+      if (Array.isArray(p.hiddenGroups)) {
+        state.hiddenGroups = p.hiddenGroups.filter((x) => typeof x === 'string');
+      }
+      save(state);
+    },
   },
 });
 

@@ -15,6 +15,7 @@ import { useFaviconSync } from '@/shared/lib/favicon/useFaviconSync';
 import { useMissedCallsTitleSync } from '@/shared/lib/title/useMissedCallsTitleSync';
 import { ensureNotificationPermission } from '@/shared/lib/notifications/notifications';
 import { useSessionKeepalive } from '@/shared/lib/session/useSessionKeepalive';
+import { useServerSettingsSync } from '@/entities/userSettings/model/useServerSettingsSync';
 
 function sendBusyStatusReset(userId: string) {
   const body = JSON.stringify({
@@ -37,6 +38,7 @@ export function MainPage() {
   useFaviconSync();
   useMissedCallsTitleSync();
   useSessionKeepalive();
+  useServerSettingsSync();
 
   useEffect(() => {
     if (userId) void ensureNotificationPermission();
