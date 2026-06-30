@@ -1,6 +1,6 @@
 import type { Middleware } from '@reduxjs/toolkit';
 import { setSession, clearSession, setWsStatus } from '@/entities/session/model/sessionSlice';
-import { WsClient } from '@/shared/api/ws/wsClient';
+import { WsClient, wsClient as sharedWsClient } from '@/shared/api/ws/wsClient';
 import type { WsConnectionState } from '@/shared/api/ws/wsClient';
 import { routeWsMessage } from '@/shared/api/ws/wsRouter';
 import { env } from '@/app/config/env';
@@ -30,7 +30,7 @@ export const wsMiddleware: Middleware = (store) => (next) => (action) => {
       client = null;
     }
 
-    client = new WsClient();
+    client = sharedWsClient;
 
     unsubscribeMessages = client.subscribe((event, raw) => {
       routeWsMessage(event, raw, {

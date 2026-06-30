@@ -3,7 +3,7 @@ import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectUserId } from '@/entities/session/model/sessionSelectors';
 import { selectUserEntities } from '@/entities/user/model/userSelectors';
 import { useResetUserStateMutation } from '@/entities/callGroup/api/callGroupApi';
-import { saveUserSettings } from '@/entities/userSettings/model/userSettings';
+import { saveUserSettings, parseUserSettings } from '@/entities/userSettings/model/userSettings';
 import {
   getInputDeviceId,
   setInputDeviceId,
@@ -37,9 +37,8 @@ function loadStun(): boolean {
   } catch { return false; }
 }
 
-function parseServerSettings(raw: string | undefined | null): ServerSettings {
-  if (!raw) return {};
-  try { return JSON.parse(raw) as ServerSettings; } catch { return {}; }
+function parseServerSettings(raw: unknown): ServerSettings {
+  return parseUserSettings(raw) as ServerSettings;
 }
 
 export function getSettings(userSettingsJson: string | undefined | null): {

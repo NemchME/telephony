@@ -175,6 +175,18 @@ export class WsClient {
   get isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
   }
+
+  send(payload: Record<string, unknown>): boolean {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      try {
+        this.ws.send(JSON.stringify(payload));
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
 }
 
 export function createWsClient(): WsClient {

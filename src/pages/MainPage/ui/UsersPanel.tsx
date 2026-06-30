@@ -170,6 +170,7 @@ export function UsersPanel() {
               showDuration={showDuration}
               onQuickDial={setQuickDial}
               isAdminOrSupervisor={isAdminOrSupervisor}
+              isCurrentUser={row.userId === myUserId}
             />
           );
         })}
@@ -263,12 +264,14 @@ function AgentRowItem({
   showDuration,
   onQuickDial,
   isAdminOrSupervisor,
+  isCurrentUser,
 }: {
   row: AgentRow;
   now: number;
   showDuration: boolean;
   onQuickDial: (info: { number: string; name: string }) => void;
   isAdminOrSupervisor: boolean;
+  isCurrentUser: boolean;
 }) {
   const dotClass = presenceToDotClass(row.presence);
   const availElapsed = row.lastModifiedAvailStatus ? elapsedSince(row.lastModifiedAvailStatus) : null;
@@ -277,7 +280,7 @@ function AgentRowItem({
   const busyLabel = row.busyCount > 0 ? 'Разг.' : 'Не разг.';
   const [resetUserState] = useResetUserStateMutation();
 
-  const isWebClientActive = !!(row.busyStatus && row.busyStatus !== '_');
+  const isWebClientActive = isCurrentUser || !!(row.busyStatus && row.busyStatus !== '_');
 
   const statusLabel = getUserStatusLabel(row.availStatus, row.busyStatus);
 
@@ -361,7 +364,7 @@ function AgentRowItem({
           {availElapsed !== null ? formatElapsed(availElapsed) : ''}
         </span>
       )}
-      <span className="user-list__col--busy badge">{busyLabel}</span>
+      <span className={`user-list__col--busy badge ${row.busyCount > 0 ? 'user-list__col--busy--talking' : ''}`}>{busyLabel}</span>
       {showDuration && (
         <span className="user-list__col--time user-list__col--time--busy badge" title="Время с изменения busyStatus">
           {busyElapsed !== null ? formatElapsed(busyElapsed) : ''}

@@ -82,10 +82,10 @@ function calcPresence(p: {
 }): UiPresence {
   if (p.networkStatus === -1 || p.networkStatus === 0) return 'OFFLINE';
   if (p.networkStatus !== 1) return 'UNKNOWN';
+  if ((p.busyCount ?? 0) > 0) return 'ONLINE_BUSY';
   if (p.availStatus === 'dnd') return 'ONLINE_DND';
   if (p.availStatus === 'away') return 'ONLINE_AWAY';
   if (p.availStatus === 'direct') return 'ONLINE_DIRECT';
-  if ((p.busyCount ?? 0) > 0) return 'ONLINE_BUSY';
   return 'ONLINE_AVAILABLE';
 }
 

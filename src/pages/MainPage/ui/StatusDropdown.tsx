@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/app/store/hooks';
 import { selectAvailStatus, selectUserId } from '@/entities/session/model/sessionSelectors';
 import { setAvailStatus } from '@/entities/session/model/sessionSlice';
-import { useUpdateMyAvailStatusMutation } from '@/entities/user/api/userApi';
+import { sendUserUpdate } from '@/shared/api/ws/sendUserUpdate';
 import { selectMagicRules } from '@/features/magicRules/model/selectMagicRules';
 import { getForbiddenStatuses } from '@/features/magicRules/lib/magicRules';
 
@@ -57,7 +57,6 @@ export function StatusDropdown() {
   const dispatch = useAppDispatch();
   const currentStatus = useAppSelector(selectAvailStatus) ?? 'avail_avail';
   const userId = useAppSelector(selectUserId);
-  const [updateStatus] = useUpdateMyAvailStatusMutation();
 
   const magicRules = useAppSelector(selectMagicRules);
   const myManageTags = useAppSelector((s) =>
@@ -84,7 +83,7 @@ export function StatusDropdown() {
     if (!userId) return;
     dispatch(setAvailStatus(value));
     const { avail, sub } = parseCompoundStatus(value);
-    updateStatus({ userId, availStatus: avail, busyStatus: sub });
+    sendUserUpdate(userId, { availStatus: avail, busyStatus: sub });
   };
 
   return (

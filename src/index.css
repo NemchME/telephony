@@ -1,3 +1,4 @@
+
 *,
 *::before,
 *::after {
@@ -135,7 +136,8 @@ a:hover {
   box-shadow: inset 0 -1px 2px rgba(0,0,0,0.15);
 }
 .status-dot--online  { background: var(--color-online); }
-.status-dot--busy    { background: var(--color-busy); }
+.status-dot--busy    { background: #f1c40f; }
+.user-list__col--busy--talking { font-weight: 700; }
 .status-dot--dnd     { background: var(--color-dnd); }
 .status-dot--away    { background: var(--color-away); }
 .status-dot--direct    { background: var(--color-direct); }
@@ -889,7 +891,7 @@ a:hover {
 }
 
 .user-list__agent--direct:hover {
-  background: #b77dd4;
+  background: #9a52c9;
 }
 
 .user-list__agent--online:hover {

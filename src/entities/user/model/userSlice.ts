@@ -12,7 +12,7 @@ export type User = {
   authorized?: number;
   domainID?: string;
   maxCalls?: number;
-  settings?: string;
+  settings?: string | Record<string, unknown>;
   crmList?: string[];
   lastModifiedTime?: number;
   lastModifiedAvailStatus?: number;
